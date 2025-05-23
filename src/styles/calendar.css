@@ -1,0 +1,529 @@
+/* Basic FullCalendar overrides to match Tailwind/Shadcn theme */
+
+/* Ensure consistent font */
+.fc {
+  font-family: inherit; /* Inherit font from body/layout */
+  height: 100%; /* Ensure FC takes full height of its container */
+}
+
+/* Toolbar styling */
+.fc .fc-toolbar {
+  flex-wrap: wrap; /* Allow toolbar items to wrap on smaller screens */
+  gap: 0.5rem; /* Add some gap between toolbar sections */
+  margin-bottom: 1rem !important; /* Add space below toolbar */
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 600; /* Semi-bold */
+  margin: 0; /* Reset margin */
+}
+
+/* Style FC buttons like Shadcn buttons (outline variant by default) */
+.fc .fc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--radius, 0.375rem); /* Use Shadcn radius variable */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* medium */
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  height: 2.25rem; /* h-9 */
+  padding: 0 0.75rem; /* px-3 */
+  background-color: hsl(var(--background)); /* Match background */
+  border: 1px solid hsl(var(--input)); /* Match input border */
+  color: hsl(var(--foreground)); /* Match text color */
+  box-shadow: none; /* Remove default FC shadow */
+}
+
+.fc .fc-button:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--input)); /* Keep border consistent on hover */
+}
+
+.fc .fc-button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.fc .fc-button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Style the 'today' button like a primary button */
+.fc .fc-button-primary:not(:disabled),
+.fc .fc-today-button:not(:disabled) { /* Target today button specifically */
+   background-color: hsl(var(--primary));
+   color: hsl(var(--primary-foreground));
+   border-color: hsl(var(--primary));
+}
+
+.fc .fc-button-primary:not(:disabled):hover,
+.fc .fc-today-button:not(:disabled):hover {
+   background-color: hsl(var(--primary) / 0.9);
+   border-color: hsl(var(--primary) / 0.9);
+}
+
+/* Active view button (e.g., Month, Week, Day) */
+.fc .fc-button-active {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-color: hsl(var(--input));
+}
+
+/* Calendar header (day names) */
+.fc .fc-col-header-cell {
+  background-color: hsl(var(--muted)); /* Match muted background */
+  color: hsl(var(--muted-foreground)); /* Match muted foreground */
+  font-weight: 500; /* medium */
+  font-size: 0.875rem; /* text-sm */
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.5rem; /* Add space below day names */
+  text-align: center; /* Center day names */
+}
+
+.fc .fc-col-header-cell-cushion { /* Target the inner element for text styling */
+  color: hsl(var(--muted-foreground));
+  padding: 0.25rem 0;
+  display: block; /* Ensure it takes full width for centering */
+  text-align: center;
+}
+
+/* Day cell borders - keeping borders as requested */
+.fc .fc-daygrid-day {
+  border: 1px solid hsl(var(--border)); /* Keep border color */
+  border-top: none;
+}
+
+/* Adjust the frame to allow for correct positioning */
+.fc .fc-daygrid-day-frame {
+  padding: 0.25rem; /* Minimal padding inside the cell */
+  display: flex;
+  flex-direction: column; /* Stack content vertically */
+  min-height: 80px; /* Give cells some minimum height */
+  position: relative; /* Needed for absolute positioning */
+}
+
+/* Style the day number - position in top left */
+.fc .fc-daygrid-day-number {
+  font-size: 0.875rem; /* text-sm */
+  color: hsl(var(--foreground));
+  position: absolute;
+  top: 0.25rem; /* Position at the top with some padding */
+  left: 0.25rem; /* Position at the left with some padding */
+  width: 1.75rem; /* Fixed width for the number background */
+  height: 1.75rem; /* Fixed height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 9999px; /* Make it circular */
+  padding: 0;
+}
+
+/* Style for days NOT in the current month (e.g., greyed out) */
+.fc .fc-day-other .fc-daygrid-day-number {
+  color: hsl(var(--muted-foreground)) !important; /* Important to override */
+  opacity: 0.6;
+}
+
+.fc .fc-day-other {
+  background-color: transparent !important; /* Ensure no background on other month days */
+}
+
+/* Today's day */
+.fc .fc-day-today {
+  background-color: transparent !important; /* Remove default yellow/accent background */
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+  background-color: hsl(var(--accent)); /* Use accent for today's number background */
+  color: hsl(var(--accent-foreground)); /* Use accent text color */
+}
+
+/* Selected day (if using dateClick for selection) */
+.fc-day-user-selected {
+  /* The background is applied to the cell itself */
+  background-color: hsl(var(--primary)) !important; /* Blue background - Use Shadcn primary */
+  border-radius: var(--radius, 0.375rem) !important; /* Rounded corners */
+}
+
+/* Style the number inside the selected day */
+.fc-day-user-selected .fc-daygrid-day-number {
+  color: hsl(var(--primary-foreground)) !important; /* White text */
+  background-color: transparent !important; /* Remove any other background (like today's accent) */
+}
+
+/* Ensure the frame takes full space within the selected cell */
+.fc-day-user-selected .fc-daygrid-day-frame {
+  width: 100%;
+  height: 100%;
+}
+
+/* Move the event container down to make room for the date number */
+.fc .fc-daygrid-day-events {
+  margin-top: 1.75rem; /* Make space for the day number */
+  padding-top: 0.25rem;
+}
+
+/* Event styling */
+.fc-event {
+  border: 1px solid transparent; /* Add transparent border for consistency */
+  border-radius: 0.25rem; /* rounded-sm */
+  padding: 1px 4px; /* Minimal padding */
+  font-size: 0.75rem; /* text-xs */
+  cursor: pointer;
+  margin-bottom: 2px !important; /* Add small gap between events */
+}
+
+/* Make event text black for better visibility */
+.fc-event-title {
+  color: hsl(var(--foreground)) !important; /* Use foreground color (black in light mode) */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500; /* Medium weight for event titles */
+}
+
+/* Ensure event time is also visible */
+.fc-event-time {
+  color: hsl(var(--foreground)) !important; /* Use foreground color (black in light mode) */
+}
+
+/* Add background contrast to events for text visibility */
+.fc-event {
+  background-color: hsl(var(--accent) / 0.2) !important; /* Use accent with transparency */
+  border-left: 3px solid; /* Keep left border for event type indication */
+}
+
+/* More events link (+N more) */
+.fc .fc-daygrid-more-link {
+  color: hsl(var(--primary));
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Time grid specific styles */
+.fc .fc-timegrid-slot {
+  border-color: hsl(var(--border));
+}
+
+.fc .fc-timegrid-slot-label {
+  font-size: 0.75rem; /* text-xs */
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+
+.fc .fc-timegrid-slot-lane {
+  border: none !important;
+}
+
+.fc .fc-timegrid-col.fc-day-today {
+  background-color: hsl(var(--accent) / 0.5) !important; /* Subtle highlight for today column in timegrid */
+}
+
+/* Popover/tooltip for events */
+.fc-popover {
+  background-color: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Match Shadcn shadow */
+  z-index: 100; /* Ensure popover is on top */
+}
+
+.fc-popover-header {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.fc-popover-title {
+  font-weight: 600;
+}
+
+.fc-popover-close {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+  font-size: 1.25rem;
+}
+
+.fc-popover-close:hover {
+  opacity: 1;
+}
+
+.fc-popover-body {
+  color: hsl(var(--foreground));
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Shadcn Calendar component styles */
+.rdp {
+  --rdp-cell-size: 40px; /* Slightly larger cells */
+  --rdp-accent-color: hsl(var(--primary)); /* Use primary color */
+  --rdp-background-color: hsl(var(--accent)); /* Use accent for hover/today */
+  --rdp-accent-color-dark: hsl(var(--primary));
+  --rdp-background-color-dark: hsl(var(--accent));
+  --rdp-outline: 2px solid hsl(var(--ring));
+  --rdp-outline-offset: 2px;
+  --rdp-selected-color: hsl(var(--primary-foreground)); /* Text color on selected */
+  margin: 1em 0;
+}
+
+.rdp {
+  display: inline-block;
+  font-family: var(--rdp-font-family);
+}
+
+.rdp-caption {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  text-align: left;
+  align-items: center;
+}
+
+.rdp-caption_label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 8px;
+  color: hsl(var(--foreground));
+}
+
+.rdp-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.rdp-nav_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  height: 2rem; /* h-8 */
+  width: 2rem; /* w-8 */
+  padding: 0;
+  background-color: transparent;
+  color: hsl(var(--foreground));
+  opacity: 0.7;
+}
+
+.rdp-nav_button:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  opacity: 1;
+}
+
+.rdp-nav_button:focus-visible {
+  outline: var(--rdp-outline);
+  outline-offset: var(--rdp-outline-offset);
+}
+
+.rdp-nav_button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.rdp-nav_button_previous {
+  margin-right: 4px;
+}
+
+.rdp-nav_button_next {
+  margin-left: 4px;
+}
+
+.rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rdp-head_row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.rdp-head_cell {
+  color: hsl(var(--muted-foreground));
+  border-radius: var(--radius);
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.rdp-tbody {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.rdp-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.rdp-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  text-align: center;
+  position: relative;
+  padding: 2px; /* Add padding around the button */
+}
+
+.rdp-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%; /* Full width of cell */
+  height: 2rem; /* h-8 */
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out;
+}
+
+.rdp-button:focus-visible {
+  outline: var(--rdp-outline);
+  outline-offset: var(--rdp-outline-offset);
+  z-index: 1; /* Ensure focus ring is visible */
+}
+
+.rdp-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.rdp-day_selected,
+.rdp-day_selected:hover,
+.rdp-day_selected:focus-visible {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.rdp-day_today:not(.rdp-day_selected) .rdp-button {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.rdp-day_today:hover {
+  background-color: var(--rdp-background-color);
+  color: var(--rdp-text-color);
+}
+
+.rdp-day_outside {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+.rdp-day_disabled {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected .rdp-button) {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.rdp-day_range_middle {
+  background-color: var(--rdp-range-background-color);
+  color: var(--rdp-range-text-color);
+  border-radius: 0;
+}
+
+.rdp-day_range_start {
+  background-color: var(--rdp-range-color);
+  color: var(--rdp-range-text-color);
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+}
+
+.rdp-day_range_end {
+  background-color: var(--rdp-range-color);
+  color: var(--rdp-range-text-color);
+  border-top-right-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+.rdp-day_range_start.rdp-day_range_end {
+  border-radius: var(--radius);
+}
+
+.rdp-day_range_middle:hover {
+  background-color: var(--rdp-range-background-color);
+  color: var(--rdp-range-text-color);
+}
+
+.rdp-day_range_start:hover {
+  background-color: var(--rdp-range-color);
+  color: var(--rdp-range-text-color);
+}
+
+.rdp-day_range_end:hover {
+  background-color: var(--rdp-range-color);
+  color: var(--rdp-range-text-color);
+}
+
+.rdp-day_hidden {
+  visibility: hidden;
+}
+
+/* Force table display for calendar grid */
+.rdp table {
+  display: table;
+}
+
+/* Session Details Sidebar Styling */
+.session-details-sidebar {
+  border-left: 1px solid hsl(var(--border));
+  padding-left: 1.5rem; /* pl-6 */
+  width: 20rem; /* w-80 */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.session-details-sidebar h2 {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 600; /* font-semibold */
+  margin-bottom: 1rem; /* space-y-4 */
+}
+
+.session-details-sidebar .session-item {
+  border-bottom: 1px solid hsl(var(--border));
+  padding-top: 0.5rem; /* py-2 */
+  padding-bottom: 0.5rem; /* py-2 */
+}
+
+.session-details-sidebar .session-item:last-child {
+  border-bottom: none;
+}
+
+.session-details-sidebar .session-item p {
+  font-size: 0.875rem; /* text-sm */
+  color: hsl(var(--muted-foreground));
+}
+
+.session-details-sidebar .session-item p strong {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext", // For modern Node.js ESM output
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist-server", // Output directory for compiled JS
+    "rootDir": ".", // Include server.ts from the root
+    "esModuleInterop": true, // Ensures CJS modules can be imported with default imports
+    "allowSyntheticDefaultImports": true, // Often used with esModuleInterop
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true, // Optional: emit .d.ts files
+    "sourceMap": true // Optional: emit source maps for debugging
+  },
+  "include": [
+    "server.ts",
+    "src/api/calendlyAuthRoutes.ts",
+    "src/api/calendlyApiRoutes.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/api/chat.ts",
+    "src/api/chat/route.ts"
+  ]
+}
