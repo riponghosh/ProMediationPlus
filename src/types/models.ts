@@ -28,14 +28,15 @@ export interface CaseFileMetadata {
  */
 export interface Contact {
   id: string; // Unique identifier (e.g., UUID)
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string; // Optional phone number
   company?: string; // Optional company name
   type: string; // e.g., 'Client', 'Attorney'
   linkedCaseFileNumber?: string; // Optional: ID of the case this contact is primarily associated with
-  createdAt?: Date; // Optional: Track creation time
-  updatedAt?: Date; // Optional: Track update time
+  createdAt: string; // Changed from Date to string (ISO string)
+  updatedAt: string; // Changed from Date to string (ISO string)
 }
 
 /**

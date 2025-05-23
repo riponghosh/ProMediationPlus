@@ -13,15 +13,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getAllCaseFileNumbers } from "@/services/localDbService"; 
 import { Contact } from "@/types/models";
 
-// Updated schema: added linkedCaseFileNumber, split name into firstName and lastName
+// Updated schema: uses firstName, lastName, and linkedCaseFileNumber
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address").or(z.literal("")), // Allow empty string for optional email
+  email: z.string().email("Invalid email address").or(z.literal("")),
   phone: z.string().min(7, "Phone number is required"),
   company: z.string().optional(),
   type: z.string().min(1, "Contact type is required"),
-  linkedCaseFileNumber: z.string().optional(), // For linking to an existing case
+  linkedCaseFileNumber: z.string().optional(),
 });
 
 export type ContactFormValues = z.infer<typeof formSchema>;
@@ -68,15 +68,17 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
     try {
       const newContact: Contact = {
         id: crypto.randomUUID(),
+        // Construct name from firstName and lastName for the Contact model if it still expects 'name'
+        // However, the Contact model in models.ts now expects firstName and lastName directly.
         firstName: values.firstName,
         lastName: values.lastName,
-        email: values.email || "", // Ensure email is string, even if empty
+        email: values.email || "",
         phone: values.phone,
         company: values.company || "",
         type: values.type,
-        linkedCaseFileNumber: values.linkedCaseFileNumber,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        linkedCaseFileNumber: values.linkedCaseFileNumber === "__NONE__" ? undefined : values.linkedCaseFileNumber,
+        createdAt: new Date().toISOString(), // Ensure string format
+        updatedAt: new Date().toISOString(), // Ensure string format
       };
       
       onCreateContact(newContact);
@@ -215,7 +217,7 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem> {/* Option for no selection */}
+                      <SelectItem value="__NONE__">None</SelectItem> {/* Option for no selection */}
                       {caseFileNumbers.map((cfn) => (
                         <SelectItem key={cfn} value={cfn}>
                           {cfn}

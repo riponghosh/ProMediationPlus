@@ -14,7 +14,7 @@ MediatorPro is a web application designed to help mediators manage their cases, 
 
 *   **Goal:** To create a comprehensive, user-friendly platform for mediation professionals.
 *   **Target Users:** Mediators, Administrative Staff, and potentially Clients (with limited, role-based access).
-*   **Core Functionalities:** Case management, client database, secure document storage, invoicing and payments, appointment scheduling, note-taking, reporting, and user role management.
+*   **Core Functionalities:** Case management, client database, secure document storage, invoicing and payments, appointment scheduling (including Calendly integration), note-taking, reporting, user role management, real-time chat, and task management.
 
 ## 3. Technology Stack
 
@@ -25,12 +25,14 @@ MediatorPro is a web application designed to help mediators manage their cases, 
 *   **Styling:** Tailwind CSS (`tailwindcss`). Utility-first approach.
 *   **Routing:** React Router DOM (`react-router-dom`) for client-side navigation.
 *   **State Management:**
-    *   Global: React Context API (e.g., `AuthContext` in `src/contexts/AuthContext.tsx`).
+    *   Global: React Context API (e.g., `AuthContext` in `src/contexts/AuthContext.tsx`, `TasksContext` in `src/contexts/TasksContext.tsx`).
     *   Local: `useState`, `useReducer` hooks.
 *   **Forms:** React Hook Form (`react-hook-form`) with Zod (`zod`) for schema validation.
 *   **Date/Time:** `date-fns`.
 *   **Linting:** ESLint (`eslint`) with TypeScript plugins.
 *   **Charting/Visualization:** Recharts (`recharts`) for reports.
+*   **Backend (Server-side logic/APIs):** Node.js with Express (as indicated by `server.ts` and `dist-server/server.js`). Potentially using `ts-node` or similar for TypeScript execution in Node.js.
+    *   API routes for features like Calendly integration (`src/api/calendlyApiRoutes.ts`, `src/api/calendlyAuthRoutes.ts`) and chat (`src/api/chat.ts`).
 
 ## 4. Project Structure
 
@@ -39,22 +41,34 @@ Familiarize yourself with the workspace structure. Key directories include:
 *   `src/`: Contains all frontend application source code.
     *   `App.tsx`: Main application component, sets up routing.
     *   `main.tsx`: Entry point of the application.
-    *   `pages/`: Top-level route components (e.g., `Dashboard.tsx`, `Cases.tsx`).
+    *   `pages/`: Top-level route components (e.g., `Dashboard.tsx`, `Cases.tsx`, `Contacts.tsx`, `Calendar.tsx`, `Tasks.tsx`).
+        *   `admin/`, `auth/`, `cases/`, `forms/`, `guides/`, `templates/`: Sub-directories for specific page groups.
     *   `components/`: Reusable UI components.
         *   `ui/`: Shadcn/ui components (often customized or re-exported).
         *   `layout/`: Components related to page structure (Sidebar, Header, etc.).
-        *   Domain-specific components (e.g., `components/cases/`).
-    *   `services/`: Modules for interacting with services.
+        *   Domain-specific components (e.g., `components/cases/`, `components/dashboard/`, `components/dialogs/`, `components/tasks/`).
+    *   `services/`: Modules for interacting with services and APIs.
         *   `authService.ts` (or similar): Authentication related functions.
-    *   `contexts/`: React Context providers for global state (e.g., `AuthContext.tsx`).
-    *   `hooks/`: Custom React hooks (e.g., `useToast.ts`).
+        *   `calendlyService.ts`: For Calendly API interactions.
+        *   `localDbService.ts`: For local database interactions (potentially IndexedDB or similar).
+        *   `storageService.ts`: For file storage interactions.
+    *   `contexts/`: React Context providers for global state (e.g., `AuthContext.tsx`, `TasksContext.tsx`).
+    *   `hooks/`: Custom React hooks (e.g., `useToast.ts`, `use-mobile.tsx`).
+        * `data/`: Potentially for hooks related to data fetching or manipulation.
     *   `types/`: TypeScript type definitions.
-        *   `models.ts`: Core data models
-        *   `roles.ts`: User role definitions.
+        *   `models.ts`: Core data models.
+        *   `roles.ts`: User role definitions (if present, otherwise general types).
+        *   `calendlyTypes.ts`: Types specific to Calendly integration.
+        *   `schemas.ts` (or similar, if form validation schemas are centralized here).
     *   `routes/`: Route definitions and path constants (`paths.ts`).
-    *   `assets/`: Static assets like images (if not in `public/`).
-*   `public/`: Static assets served directly by Vite.
-*   `functions/`: 
+    *   `lib/`: Utility functions and libraries (e.g., `dateUtils.ts`, `utils.ts`, `mobileStyling.ts`).
+    *   `styles/`: Global or component-specific stylesheets (e.g., `calendar.css`).
+    *   `api/`: Client-side API route definitions or stubs that correspond to server-side handlers.
+        *   `chat/`: Client-side logic for chat features.
+*   `public/`: Static assets served directly by Vite (e.g., `favicon.ico`, images, videos).
+*   `server.ts` (and `dist-server/`): Backend server code, likely Express.js, handling API requests.
+    *   `src/api/` (within `dist-server` or a similar structure for compiled server code): Contains server-side API route handlers (e.g., `calendlyApiRoutes.js`, `chat.js`).
+*   `functions/`: (If used for serverless functions, e.g., Firebase Cloud Functions)
     *   `src/index.ts`: Main entry point for cloud functions.
     *   `src/setCustomClaims.ts`: Example function for managing user roles.
 *   **Root Configuration Files:**
@@ -137,14 +151,18 @@ To get the best results when I ask you to write or modify code:
 
 ## 7. Key Files & Paths (Quick Reference)
 
-*   **Data Models:** `src/types/models.ts`, `src/types/roles.ts`
-*   **Global State Contexts:** `src/contexts/` (e.g., `AuthContext.tsx`)
+*   **Data Models:** `src/types/models.ts`, `src/types/calendlyTypes.ts` (add `src/types/roles.ts` if it exists)
+*   **Global State Contexts:** `src/contexts/` (e.g., `AuthContext.tsx`, `TasksContext.tsx`)
 *   **Reusable UI Components:** `src/components/`
 *   **Shadcn/ui Components:** `src/components/ui/`
 *   **Page Components:** `src/pages/`
 *   **Routing Logic:** `src/routes/paths.ts`, `src/App.tsx`
+*   **Service Logic:** `src/services/`
+*   **Backend API Logic:** `server.ts`, `src/api/` (client-side stubs), `dist-server/src/api/` (compiled server-side handlers)
 *   **Tailwind Config:** `tailwind.config.ts`
 *   **Vite Config:** `vite.config.ts`
+*   **TypeScript Configs:** `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`
+*   **ESLint Config:** `eslint.config.js`
 
 ## 8. Do's and Don'ts
 
@@ -163,5 +181,31 @@ To get the best results when I ask you to write or modify code:
     *   Duplicate code; create reusable functions or components instead.
     *   Leave `console.log` statements in production code.
     *   Commit commented-out code unless it's for a specific, temporary reason.
+
+## 9. Pushing to GitHub
+
+When you're ready to push your changes to a new branch on GitHub, follow these steps:
+
+1.  **Create and switch to a new branch:**
+    ```bash
+    git checkout -b "name-of-your-new-branch"
+    ```
+    *Replace `"name-of-your-new-branch"` with a descriptive name for your branch (e.g., `feature/add-case-filtering`, `fix/login-bug`).*
+
+2.  **Stage all your changes:**
+    ```bash
+    git add .
+    ```
+
+3.  **Commit your changes:**
+    ```bash
+    git commit -m "Your descriptive commit message"
+    ```
+    *Write a clear and concise message that explains the changes you made.*
+
+4.  **Push your branch to the remote repository (origin):**
+    ```bash
+    git push -u origin "name-of-your-new-branch"
+    ```
 
 By following these guidelines, you will be an invaluable assistant in developing MediatorPro. Let's build something great!

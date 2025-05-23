@@ -23,18 +23,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const formSchema = z.object({
   id: z.string(),
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(7, "Phone number is required"),
   company: z.string().optional(),
   type: z.string().min(1, "Contact type is required"),
-  caseFileNumbers: z.string().optional(), // Changed from array to optional string
+  linkedCaseFileNumber: z.string().optional(),
 });
 
 export type ContactFormValues = z.infer<typeof formSchema>;
 
 interface EditContactDialogProps {
-  contact: ContactFormValues;
+  contact: ContactFormValues; // This will receive an object with firstName, lastName from ContactsPage
   onUpdateContact: (contact: ContactFormValues) => void;
   onDelete?: (id: string) => void;
 }
@@ -52,7 +53,7 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
     onUpdateContact(values);
     
     // Show success toast
-    toast.success("Contact updated successfully");
+    toast.success(`Contact for ${values.firstName} ${values.lastName} updated successfully`);
     
     // Close dialog
     setOpen(false);
@@ -61,13 +62,13 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.success(`Shared contact: ${contact.name}`);
+    toast.success(`Shared contact: ${contact.firstName} ${contact.lastName}`);
   };
 
   const handleDownload = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.success(`Downloaded contact: ${contact.name}`);
+    toast.success(`Downloaded contact: ${contact.firstName} ${contact.lastName}`);
   };
 
   const handleDelete = () => {
@@ -100,7 +101,7 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the contact "{contact.name}".
+                This will permanently delete the contact "{contact.firstName} {contact.lastName}".
                 This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -124,12 +125,25 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Smith" {...field} />
+                    <Input placeholder="John" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Smith" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -205,7 +219,7 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
             {/* Display Case File Number as read-only text */}
             <FormField
               control={form.control}
-              name="caseFileNumbers"
+              name="linkedCaseFileNumber"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Case File Number</FormLabel>
