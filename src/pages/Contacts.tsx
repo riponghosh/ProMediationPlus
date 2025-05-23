@@ -1,69 +1,66 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Briefcase, Mail, Phone, User, UserCog, UserPlus, Users, UsersRound } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { Link } from "react-router-dom";
-import { Layout } from "@/components/layout/layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  User, Search, Plus, MoreHorizontal,
-  Mail, Phone, Building, Users,
-  Filter, Briefcase, UsersRound, UserPlus, UserCog
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreateContactDialog } from "@/components/dialogs/create-contact-dialog";
-import { EditContactDialog, ContactFormValues } from "@/components/dialogs/edit-contact-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+
+import { Layout } from '@/components/layout/layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CreateContactDialog } from '@/components/dialogs/create-contact-dialog';
+import { EditContactDialog, ContactFormValues } from '@/components/dialogs/edit-contact-dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { addItem, deleteItem, getAllItems, putItem } from '@/services/localDbService';
+import { toast } from 'sonner';
+import { paths } from '@/routes/paths';
 import { Contact, Case } from "@/types/models";
-import { addItem, getAllItems, putItem, deleteItem } from "@/services/localDbService";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mock contacts with case file links for fallback seeding
 const initialContacts: Contact[] = [
   {
     id: 'contact-1',
-    name: 'John Smith',
+    // name: 'John Smith', // This property is part of the extended Contact, not BaseDocument
+    firstName: 'John',
+    lastName: 'Smith',
     email: 'john.smith@example.com',
-    phone: '123-456-7890',
-    company: 'Smith & Co',
-    type: 'Client',
-    caseFileNumbers: ['CF-2023-001'],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    phoneNumber: '123-456-7890',
+    organisation: 'Smith & Co',
+    contactType: 'Client', // Added contactType
+    caseFileNumbers: 'CF-2023-001', // Changed to string
+    createdAt: new Date().toISOString(), // Ensure ISO string for dates
+    updatedAt: new Date().toISOString(), // Ensure ISO string for dates
   },
   {
     id: 'contact-2',
-    name: 'Sarah Johnson',
+    // name: 'Sarah Johnson', // This property is part of the extended Contact, not BaseDocument
+    firstName: 'Sarah',
+    lastName: 'Johnson',
     email: 'sarah.johnson@example.com',
-    phone: '234-567-8901',
-    company: 'Johnson Law',
-    type: 'Solicitor',
-    caseFileNumbers: ['CF-2023-002'],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    phoneNumber: '234-567-8901',
+    organisation: 'Johnson Law',
+    contactType: 'Solicitor', // Added contactType
+    caseFileNumbers: 'CF-2023-002', // Changed to string
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'contact-3',
-    name: 'Robert Brown',
+    // name: 'Robert Brown', // This property is part of the extended Contact, not BaseDocument
+    firstName: 'Robert',
+    lastName: 'Brown',
     email: 'robert.brown@example.com',
-    phone: '345-678-9012',
-    company: 'Brown Consulting',
-    type: 'General',
-    caseFileNumbers: ['CF-2023-003'],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    phoneNumber: '345-678-9012',
+    organisation: 'Brown Consulting',
+    contactType: 'General', // Added contactType
+    caseFileNumbers: 'CF-2023-003', // Changed to string
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
 const ContactsPage = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [matters, setMatters] = useState<Matter[]>([]);
+  const [cases, setCases] = useState<Case[]>([]); // Renamed from matters
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -77,27 +74,80 @@ const ContactsPage = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [loadedContacts, loadedMatters] = await Promise.all([
-          getAllItems('contacts'),
-          getAllItems('matters')
+        let [loadedContacts, loadedCasesData] = await Promise.all([
+          getAllItems('contacts') as Promise<any[]>, // Load as any[] for potential migration
+          getAllItems('cases')
         ]);
 
-        if (loadedContacts.length === 0) {
+        // Simple migration: Check for old structure (name field) and convert
+        // Also ensure essential fields like firstName, lastName, contactType are present
+        const migratedContacts = loadedContacts.map(c => {
+          const contact = { ...c }; // Create a mutable copy
+          if (contact.name && (!contact.firstName || !contact.lastName)) {
+            const nameParts = String(contact.name).split(' ');
+            contact.firstName = nameParts[0] || 'N/A';
+            contact.lastName = nameParts.slice(1).join(' ') || 'N/A';
+            delete contact.name; // Remove old name field
+          }
+          // Ensure essential fields have default values if missing
+          if (!contact.firstName) contact.firstName = 'Unknown';
+          if (!contact.lastName) contact.lastName = 'Contact';
+          if (!contact.contactType) contact.contactType = 'General'; // Default contact type
+          if (Array.isArray(contact.caseFileNumbers)) { // If old array format, take first or empty string
+            contact.caseFileNumbers = contact.caseFileNumbers[0] || '';
+          } else if (typeof contact.caseFileNumbers === 'undefined') {
+            contact.caseFileNumbers = ''; // Ensure it's at least an empty string
+          }
+          if (!contact.createdAt) contact.createdAt = new Date().toISOString();
+          if (!contact.updatedAt) contact.updatedAt = new Date().toISOString();
+          
+          return contact as Contact;
+        });
+
+        if (migratedContacts.length === 0 && initialContacts.length > 0) {
           console.log("No contacts found, seeding initial contacts...");
-          await Promise.all(initialContacts.map(c => addItem('contacts', c)));
+          // Ensure initialContacts also conform to the latest structure if they were somehow outdated
+          const contactsToSeed = initialContacts.map(c => ({
+            ...c,
+            id: c.id || uuidv4(),
+            firstName: c.firstName || 'N/A',
+            lastName: c.lastName || 'N/A',
+            contactType: c.contactType || 'General',
+            caseFileNumbers: typeof c.caseFileNumbers === 'string' ? c.caseFileNumbers : '',
+            createdAt: c.createdAt || new Date().toISOString(),
+            updatedAt: c.updatedAt || new Date().toISOString(),
+          }));
+          await Promise.all(contactsToSeed.map(c => addItem('contacts', c)));
           const seededContacts = await getAllItems('contacts');
-          setContacts(seededContacts);
+          setContacts(seededContacts as Contact[]);
         } else {
-          setContacts(loadedContacts);
+          setContacts(migratedContacts);
+          // Optionally, update the stored contacts if migration occurred
+          // This is a good practice to avoid re-migrating every time
+          // However, be cautious with bulk updates if not needed frequently
+          // For now, we'll just use the migrated data in state.
+          // If you want to persist migrations:
+          // await Promise.all(migratedContacts.map(c => putItem('contacts', c)));
         }
 
-        setMatters(loadedMatters);
-        console.log("Contacts loaded from DB:", loadedContacts);
-        console.log("Matters loaded from DB:", loadedMatters);
+        setCases(loadedCasesData as Case[]);
+        console.log("Contacts loaded (and potentially migrated) from DB:", migratedContacts);
+        console.log("Cases loaded from DB:", loadedCasesData);
       } catch (error) {
         console.error('Error loading data from IndexedDB:', error);
-        toast.error("Failed to load contacts or matters from local storage.");
-        setContacts(initialContacts);
+        toast.error("Failed to load contacts or cases from local storage.");
+        // Fallback to initialContacts, ensuring they are also well-structured
+        const wellStructuredInitialContacts = initialContacts.map(c => ({
+            ...c,
+            id: c.id || uuidv4(),
+            firstName: c.firstName || 'N/A',
+            lastName: c.lastName || 'N/A',
+            contactType: c.contactType || 'General',
+            caseFileNumbers: typeof c.caseFileNumbers === 'string' ? c.caseFileNumbers : '',
+            createdAt: c.createdAt || new Date().toISOString(),
+            updatedAt: c.updatedAt || new Date().toISOString(),
+          }));
+        setContacts(wellStructuredInitialContacts as Contact[]);      
       } finally {
         setIsLoading(false);
       }
@@ -107,21 +157,23 @@ const ContactsPage = () => {
 
   // Filter contacts based on search term and active tab
   const filteredContacts = contacts.filter(contact => {
+    const fullName = `${contact.firstName} ${contact.lastName}`.toLowerCase();
     const matchesSearch =
       searchTerm === "" ||
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (contact.phone && contact.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (contact.company && contact.company.toLowerCase().includes(searchTerm.toLowerCase()));
+      fullName.includes(searchTerm.toLowerCase()) || // Search by full name
+      (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contact.phoneNumber && contact.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (contact.organisation && contact.organisation.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (activeTab === "all") return matchesSearch;
-    return matchesSearch && contact.type?.toLowerCase() === activeTab.toLowerCase();
+    // Ensure contactType is checked safely
+    return matchesSearch && contact.contactType?.toLowerCase() === activeTab.toLowerCase();
   });
 
   // Get counts for each type of contact
-  const newEnquiryCount = contacts.filter(contact => contact.type === "New Enquiry").length;
-  const clientCount = contacts.filter(contact => contact.type === "Client").length;
-  const solicitorCount = contacts.filter(contact => contact.type === "Solicitor").length;
+  const newEnquiryCount = contacts.filter(contact => contact.contactType === "New Enquiry").length;
+  const clientCount = contacts.filter(contact => contact.contactType === "Client").length;
+  const solicitorCount = contacts.filter(contact => contact.contactType === "Solicitor").length;
 
   // Handle contact deletion
   const handleDeleteContact = async (id: string | number) => {
@@ -142,16 +194,35 @@ const ContactsPage = () => {
         return;
     }
     const existingContact = contacts.find(c => c.id === String(updatedContactData.id));
+    
+    // Construct the updated contact, ensuring all fields from Contact type are present
+    // and correctly typed from ContactFormValues.
     const updatedContact: Contact = {
-        ...(existingContact || {}),
-        ...updatedContactData,
+        ...(existingContact || {}), // Spread existing contact first to retain all its properties
         id: String(updatedContactData.id),
-        name: updatedContactData.name || existingContact?.name || 'Unknown Name',
-        email: updatedContactData.email || existingContact?.email || 'unknown@example.com',
-        type: updatedContactData.type || existingContact?.type || 'Unknown Type',
-        caseFileNumbers: updatedContactData.caseFileNumbers ?? [],
-        createdAt: existingContact?.createdAt ?? new Date(),
-        updatedAt: new Date(),
+        firstName: updatedContactData.name ? updatedContactData.name.split(' ')[0] : existingContact?.firstName || 'N/A',
+        lastName: updatedContactData.name ? updatedContactData.name.split(' ').slice(1).join(' ') : existingContact?.lastName || 'N/A',
+        email: updatedContactData.email || existingContact?.email,
+        phoneNumber: updatedContactData.phone || existingContact?.phoneNumber,
+        organisation: updatedContactData.company || existingContact?.organisation,
+        contactType: (updatedContactData.type as Contact["contactType"]) || existingContact?.contactType || 'General',
+        caseFileNumbers: updatedContactData.caseFileNumbers || existingContact?.caseFileNumbers || '',
+        // Retain other fields from existingContact if not in updatedContactData
+        roleInCase: existingContact?.roleInCase,
+        associatedCaseIds: existingContact?.associatedCaseIds,
+        billingRate: existingContact?.billingRate,
+        paymentTerms: existingContact?.paymentTerms,
+        communicationHistory: existingContact?.communicationHistory,
+        notes: existingContact?.notes,
+        preferredContactMethod: existingContact?.preferredContactMethod,
+        drtReferral: existingContact?.drtReferral,
+        drtReferralDate: existingContact?.drtReferralDate,
+        drtReferralSource: existingContact?.drtReferralSource,
+        drtReferralContact: existingContact?.drtReferralContact,
+        drtReferralOutcome: existingContact?.drtReferralOutcome,
+        drtReferralNotes: existingContact?.drtReferralNotes,
+        createdAt: existingContact?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
     };
 
     try {
@@ -296,12 +367,20 @@ const ContactsPage = () => {
                                   <div className={`${isMobile ? "h-8 w-8" : "h-10 w-10"} flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3`}>
                                     <User className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />
                                   </div>
-                                  <span className={`${isMobile ? "text-xs" : "text-sm"} font-medium truncate`}>{contact.name}</span>
+                                  <span className={`${isMobile ? "text-xs" : "text-sm"} font-medium truncate`}>{`${contact.firstName} ${contact.lastName}`}</span>
                                 </div>
                                 <div className="flex-shrink-0">
                                   <EditContactDialog
-                                    contact={contact as ContactFormValues}
-                                    availableCaseFileNumbers={matters.map(m => m.caseFileNumber)}
+                                    contact={{
+                                      id: contact.id,
+                                      name: `${contact.firstName} ${contact.lastName}`,
+                                      email: contact.email || "",
+                                      phone: contact.phoneNumber || "",
+                                      company: contact.organisation || "",
+                                      type: contact.contactType || "General",
+                                      caseFileNumbers: contact.caseFileNumbers || ""
+                                    } as ContactFormValues}
+                                    // availableCaseFileNumbers={cases.map(c => c.caseFileNumber)} // Removed as it's no longer needed
                                     onUpdateContact={handleUpdateContact}
                                     onDelete={() => handleDeleteContact(contact.id)}
                                   />
@@ -312,46 +391,45 @@ const ContactsPage = () => {
                               <div className="ml-11 flex flex-wrap items-center gap-x-2 text-muted-foreground">
                                 <div className="flex items-center">
                                   <Mail className={`${isMobile ? "h-2.5 w-2.5 mr-0.5" : "h-3 w-3 mr-0.5"}`} />
-                                  <span className={`${isMobile ? "text-[0.65rem]" : "text-xs"} truncate max-w-[120px] sm:max-w-[150px]`}>{contact.email}</span>
+                                  {contact.email}
                                 </div>
                                 <span>•</span>
                                 <div className="flex items-center">
                                   <Phone className={`${isMobile ? "h-2.5 w-2.5 mr-0.5" : "h-3 w-3 mr-0.5"}`} />
-                                  <span className={`${isMobile ? "text-[0.65rem]" : "text-xs"}`}>{contact.phone || 'N/A'}</span>
+                                  {contact.phoneNumber}
                                 </div>
                                 <span>•</span>
                                 <div className="flex items-center">
                                   <Users className={`${isMobile ? "h-2.5 w-2.5 mr-0.5" : "h-3 w-3 mr-0.5"}`} />
-                                  <span className={`${isMobile ? "text-[0.65rem]" : "text-xs"}`}>{contact.type || 'N/A'}</span>
+                                  {contact.organisation}
                                 </div>
-                                {contact.caseFileNumbers && contact.caseFileNumbers.length > 0 && (
+                                {contact.caseFileNumbers && (
                                   <>
                                     <span>•</span>
-                                    <div className="flex items-center space-x-1">
-                                      <Briefcase className={`${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"} flex-shrink-0`} />
-                                      {contact.caseFileNumbers.map((cfNumber, index) => {
-                                        const matter = matters.find(m => m.caseFileNumber === cfNumber);
-                                        return matter ? (
-                                          <Button
-                                            variant="link"
-                                            asChild
-                                            className={`p-0 h-auto ${isMobile ? "text-[0.65rem]" : "text-xs"} font-medium text-left`}
-                                          >
+                                    <div className="flex items-center gap-x-1">
+                                      <Briefcase className={`${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"}`} />
+                                      {(() => {
+                                        const caseFileNumber = contact.caseFileNumbers; // Now a string
+                                        const matchingCase = cases.find(c => c.caseFileNumber === caseFileNumber);
+                                        if (matchingCase && matchingCase.id) {
+                                          return (
                                             <Link
-                                              key={matter.id || cfNumber}
-                                              to={`/case-files/${matter.id}/summary`}
-                                              title={`View Case File ${cfNumber}`}
-                                              className={`text-blue-600 hover:underline ${isMobile ? "text-[0.65rem]" : "text-xs"}`}
+                                              key={matchingCase.id}
+                                              to={`${paths.caseFiles}/${matchingCase.id}/summary`}
+                                              className="text-blue-600 hover:underline"
+                                              title={`View summary for case ${caseFileNumber}`}
                                             >
-                                              {cfNumber}
+                                              {caseFileNumber}
                                             </Link>
-                                          </Button>
-                                        ) : (
-                                          <span key={`${cfNumber}-${index}`} className={`${isMobile ? "text-[0.65rem]" : "text-xs"}`} title="Case file not found">
-                                            {cfNumber}
-                                          </span>
-                                        );
-                                      })}
+                                          );
+                                        } else {
+                                          return (
+                                            <span key={caseFileNumber} title="Case details not found or ID missing">
+                                              {caseFileNumber}
+                                            </span>
+                                          );
+                                        }
+                                      })()}
                                     </div>
                                   </>
                                 )}

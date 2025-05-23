@@ -5,7 +5,7 @@ import type {
   MediatorMateDBSchema, 
   Case, 
   Note, 
-  // Contact, // Assuming Contact is not available or not used here
+  Contact, // Ensure Contact is imported
   Document, 
   Task, 
   CaseFileMetadata, 
@@ -16,11 +16,11 @@ import type {
 } from '@/types/models';
 
 const DATABASE_NAME = 'MediatorMateDB';
-const DATABASE_VERSION = 9; // Incremented due to schema changes (contacts store removal)
+const DATABASE_VERSION = 11; // Incremented due to schema changes (appCounters store)
 
 let dbPromise: Promise<IDBPDatabase<MediatorMateDBSchema>> | null = null;
 
-type StoreNameUnion = "cases" | "notes" | "documents" | "tasks" | "caseFiles" | "timeline" | "checklistItems" | "meetings" | "forms";
+type StoreNameUnion = "cases" | "notes" | "contacts" | "documents" | "tasks" | "caseFiles" | "timeline" | "checklistItems" | "meetings" | "forms" | "appCounters"; // Added "appCounters"
 
 const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
   if (!dbPromise) {
@@ -31,11 +31,17 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
         const ensureStoreAndIndexes = <SName extends StoreNameUnion>(
           storeName: SName,
           keyPathOption: IDBObjectStoreParameters | undefined = { keyPath: 'id' },
+          // Make indexConfigs optional and default to an empty array
           indexConfigs: Array<{
-            indexName: Extract<keyof MediatorMateDBSchema[SName]['indexes'], string>;
+            // Adjust IndexName type to be conditional
+            indexName: SName extends keyof MediatorMateDBSchema ? 
+                       (MediatorMateDBSchema[SName] extends { indexes: any } ? 
+                         Extract<keyof MediatorMateDBSchema[SName]['indexes'], string> : 
+                         never) :
+                       never;
             keyPath: string | string[];
             options?: IDBIndexParameters;
-          }>
+          }> = [] // Default to empty array if no indexes
         ) => {
           let store;
           if (!db.objectStoreNames.contains(storeName)) {
@@ -65,14 +71,13 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
           { indexName: 'createdAt', keyPath: 'createdAt' },
         ]);
 
-        const oldContactsStoreName = 'contacts';
-        // IDBDatabase.objectStoreNames is a DOMStringList, which has a .contains(string) method.
-        // Cast to DOMStringList to satisfy TypeScript strictness if db.objectStoreNames is typed more narrowly.
-        if ((db.objectStoreNames as unknown as DOMStringList).contains(oldContactsStoreName)) {
-          db.deleteObjectStore(oldContactsStoreName as any); // Cast to any for deletion as it's not in current schema
-          console.log(`Deleted '${oldContactsStoreName}' object store as it is no longer defined in the schema.`);
-        }
-
+        // Ensure 'contacts' store is created according to schema
+        ensureStoreAndIndexes('contacts', { keyPath: 'id' }, [
+          { indexName: 'by-name', keyPath: 'name' },
+          { indexName: 'email', keyPath: 'email', options: { unique: false } }, // Assuming email is not strictly unique for contacts
+          { indexName: 'type', keyPath: 'type' },
+        ]);
+        
         ensureStoreAndIndexes('documents', { keyPath: 'id' }, [
           { indexName: 'by-caseId', keyPath: 'caseId' },
           { indexName: 'by-type', keyPath: 'type' },
@@ -115,6 +120,9 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
         ensureStoreAndIndexes('forms', { keyPath: 'id' }, [
           { indexName: 'by-formTitle', keyPath: 'formTitle' },
         ]);
+
+        // Add appCounters store
+        ensureStoreAndIndexes('appCounters', { keyPath: 'id' }, []);
 
       },
       blocked() {
@@ -172,9 +180,28 @@ export const getAllItems = async <Store extends StoreNameUnion>(
   }
 };
 
+// New function to get all case file numbers from the 'cases' store
+export const getAllCaseFileNumbers = async (): Promise<string[]> => {
+  try {
+    const db = await getDb();
+    const cases = await db.getAll('cases');
+    // Filter out any cases that might not have a caseFileNumber (though schema implies it's required)
+    // and map to an array of caseFileNumber strings.
+    return cases.filter(c => c.caseFileNumber).map(c => c.caseFileNumber);
+  } catch (error) {
+    console.error("Error getting all case file numbers:", error);
+    throw new Error("Failed to get all case file numbers");
+  }
+};
+
 export const getItemsByIndex = async <
     Store extends StoreNameUnion,
-    Idx extends Extract<keyof MediatorMateDBSchema[Store]['indexes'], string>
+    // Adjust Idx to handle stores that might not have an 'indexes' property or where 'indexes' is undefined
+    Idx extends Store extends keyof MediatorMateDBSchema ? 
+            (MediatorMateDBSchema[Store] extends { indexes: any } ? 
+              Extract<keyof MediatorMateDBSchema[Store]['indexes'], string> : 
+              never) :
+            never
 >(
   storeName: Store,
   indexName: Idx,
@@ -354,6 +381,57 @@ export const updateMeeting = async (meeting: Meeting): Promise<IDBValidKey> => {
 export const deleteMeeting = async (meetingId: string): Promise<void> => {
   return deleteItem('meetings', meetingId);
 };
+
+// --- Case File Number Generation ---
+const CASE_FILE_COUNTER_ID = 'caseFileNumber';
+
+/**
+ * Generates the next sequential case file number (e.g., CF-000001).
+ * This function will initialize the counter in IndexedDB if it doesn't exist.
+ * @returns {Promise<string>} The next case file number.
+ */
+export const generateNextCaseFileNumber = async (): Promise<string> => {
+  const db = await getDb();
+  const tx = db.transaction('appCounters', 'readwrite');
+  const store = tx.objectStore('appCounters');
+  
+  let counterDoc = await store.get(CASE_FILE_COUNTER_ID);
+  let nextNumber = 0;
+
+  if (counterDoc) {
+    nextNumber = counterDoc.currentValue + 1;
+    counterDoc.currentValue = nextNumber;
+    await store.put(counterDoc);
+  } else {
+    // Initialize if it doesn't exist
+    nextNumber = 0; // Start from CF-000000
+    await store.add({ id: CASE_FILE_COUNTER_ID, currentValue: nextNumber });
+  }
+  
+  await tx.done;
+  
+  // Format the number to be 6 digits, padded with leading zeros
+  const formattedNumber = String(nextNumber).padStart(6, '0');
+  return `CF-${formattedNumber}`;
+};
+
+
+/**
+ * Generates the next case file ID for a Case entity, e.g., CF-000001.
+ * Uses a separate counter from the one previously used for contacts.
+ */
+export async function generateNextCaseFileIdForCase(): Promise<string> {
+  const db = await getDb();
+  const counterId = 'caseFileIdCounter_Case'; // Dedicated counter for Case entities
+  let counter = await db.get('appCounters', counterId);
+  if (!counter) {
+    counter = { id: counterId, currentValue: 0 };
+  }
+  counter.currentValue += 1;
+  await db.put('appCounters', counter);
+  return `CF-${String(counter.currentValue).padStart(6, '0')}`;
+}
+
 
 // Initialize DB connection when service loads (optional)
 getDb().then(() => console.log("DB connection OK.")).catch(console.error);

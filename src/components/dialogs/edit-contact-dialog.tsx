@@ -1,19 +1,13 @@
-
-import { useState, useRef, useEffect } from "react"; // Added useRef, useEffect
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Pencil, Share, Download, Trash, X, Check, ChevronsUpDown } from "lucide-react"; // Added X, Check, ChevronsUpDown
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"; // Added Command
-import { Badge } from "@/components/ui/badge"; // Added Badge
-import { cn } from "@/lib/utils"; // Added cn
+import { Pencil, Share, Download, Trash } from "lucide-react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,28 +19,27 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
-  id: z.string(), // Changed ID to string
+  id: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(7, "Phone number is required"),
   company: z.string().optional(),
   type: z.string().min(1, "Contact type is required"),
-  // Allow CF followed by alphanumeric and hyphens
-  caseFileNumbers: z.array(z.string().regex(/^CF[\w-]+$/, "Case file number must start with 'CF' and contain numbers, letters, or hyphens")).optional(),
+  caseFileNumbers: z.string().optional(), // Changed from array to optional string
 });
 
 export type ContactFormValues = z.infer<typeof formSchema>;
 
 interface EditContactDialogProps {
   contact: ContactFormValues;
-  availableCaseFileNumbers: string[]; // Add prop for autocomplete suggestions
   onUpdateContact: (contact: ContactFormValues) => void;
-  onDelete?: (id: string) => void; // Changed ID to string
+  onDelete?: (id: string) => void;
 }
 
-export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateContact, onDelete }: EditContactDialogProps) {
+export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditContactDialogProps) {
   const [open, setOpen] = useState(false);
   
   const form = useForm<ContactFormValues>({
@@ -123,6 +116,9 @@ export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateC
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
+          <DialogDescription>
+            Update the contact details below. The case file number is auto-generated and cannot be changed here.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -206,115 +202,26 @@ export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateC
               )}
             />
 
+            {/* Display Case File Number as read-only text */}
             <FormField
               control={form.control}
               name="caseFileNumbers"
-              render={({ field }) => {
-                const selectedValues = field.value || [];
-                const [popoverOpen, setPopoverOpen] = useState(false);
-                const [inputValue, setInputValue] = useState(''); // For CommandInput
-
-                const handleSelect = (currentValue: string) => {
-                  const newValue = currentValue.toLowerCase();
-                  const exists = selectedValues.some(v => v.toLowerCase() === newValue);
-                  if (!exists) {
-                    // Validate format before adding
-                    // Use the updated, more flexible regex
-                    if (/^CF[\w-]+$/i.test(currentValue)) {
-                      field.onChange([...selectedValues, currentValue]);
-                    } else {
-                      toast.warning(`Invalid format: ${currentValue}. Must be CF followed by numbers.`);
-                    }
-                  }
-                  setInputValue(''); // Clear input after selection/attempt
-                  setPopoverOpen(false);
-                };
-
-                const handleRemove = (valueToRemove: string) => {
-                  field.onChange(selectedValues.filter(v => v !== valueToRemove));
-                };
-
-                const filteredSuggestions = availableCaseFileNumbers.filter(
-                  cfn => !selectedValues.includes(cfn) && cfn.toLowerCase().includes(inputValue.toLowerCase())
-                );
-
-                return (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Case File Numbers</FormLabel>
-                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={popoverOpen}
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value?.length && "text-muted-foreground"
-                            )}
-                          >
-                            {selectedValues.length > 0
-                              ? `${selectedValues.length} selected`
-                              : "Select case file numbers..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command shouldFilter={false}> {/* We filter manually */}
-                          <CommandInput
-                            placeholder="Search or type number..."
-                            value={inputValue}
-                            onValueChange={setInputValue}
-                            onKeyDown={(e) => {
-                              // Allow adding custom value if Enter is pressed and it's valid
-                              if (e.key === 'Enter' && inputValue && !filteredSuggestions.includes(inputValue)) {
-                                e.preventDefault();
-                                handleSelect(inputValue);
-                              }
-                            }}
-                          />
-                          <CommandList>
-                            <CommandEmpty>No matching numbers found.</CommandEmpty>
-                            <CommandGroup>
-                              {filteredSuggestions.map((cfn) => (
-                                <CommandItem
-                                  key={cfn}
-                                  value={cfn}
-                                  onSelect={() => handleSelect(cfn)}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      selectedValues.includes(cfn) ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {cfn}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {selectedValues.map((value) => (
-                        <Badge key={value} variant="secondary">
-                          {value}
-                          <button
-                            type="button"
-                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                            onClick={() => handleRemove(value)}
-                          >
-                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Case File Number</FormLabel>
+                  <FormControl>
+                    {/* Use a simple input, make it readOnly, and style to indicate it's not for editing */}
+                    <Input 
+                      {...field} 
+                      value={field.value || ""} // Ensure value is not undefined
+                      readOnly 
+                      className="border-dashed bg-muted text-muted-foreground" // Style to look disabled/read-only
+                      placeholder="CF-000000" 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             
             <DialogFooter>

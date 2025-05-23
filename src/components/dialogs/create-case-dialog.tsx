@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,70 +9,82 @@ import { z } from "zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateNextCaseFileIdForCase } from "@/services/localDbService";
 
 const formSchema = z.object({
   title: z.string().min(2, "Case title is required"),
   type: z.string().min(1, "Case type is required"),
   clientName: z.string().min(2, "Client name is required"),
-  caseFile: z.string()
-    .min(9, "Case file must be in format CF-XXXXXX")
-    .regex(/^CF-\d{6}$/, "Must be in format CF-XXXXXX"),
+  caseFile: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateCaseDialogProps {
-  // onSave should only pass the data collected by the form
   onSave?: (caseData: FormValues) => void;
-  // External control props
   isOpen?: boolean;
   onClose?: () => void;
-  // Control whether to show the trigger button
   showTrigger?: boolean;
 }
 
 export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false }: CreateCaseDialogProps) {
-  // Use local state for internal control
   const [localOpen, setLocalOpen] = useState(false);
-  
-  // Use external state if provided, otherwise use local state
+  const [generatedCaseFileId, setGeneratedCaseFileId] = useState<string>("");
+
   const dialogOpen = isOpen !== undefined ? isOpen : localOpen;
-  
-  const handleOpenChange = (open: boolean) => {
-    if (isOpen !== undefined && onClose && !open) {
-      // If external control is used, call onClose when dialog is closing
-      onClose();
-    } else {
-      // Otherwise use local state control
-      setLocalOpen(open);
-    }
-  };
-  
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       type: "Divorce Mediation",
       clientName: "",
-      caseFile: "CF-",
+      caseFile: "",
     },
   });
 
+  useEffect(() => {
+    if (dialogOpen) {
+      const generateId = async () => {
+        try {
+          const newId = await generateNextCaseFileIdForCase();
+          setGeneratedCaseFileId(newId);
+          form.setValue("caseFile", newId);
+        } catch (error) {
+          console.error("Failed to generate case file ID:", error);
+          toast.error("Failed to generate case file ID.");
+        }
+      };
+      generateId();
+    } else {
+      form.reset({
+        title: "",
+        type: "Divorce Mediation",
+        clientName: "",
+        caseFile: "",
+      });
+      setGeneratedCaseFileId("");
+    }
+  }, [dialogOpen, form]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (isOpen !== undefined && onClose && !open) {
+      onClose();
+    } else {
+      setLocalOpen(open);
+    }
+  };
+
   function onSubmit(values: FormValues) {
-    // Call the onSave prop with only the form values
     if (onSave) {
       onSave(values);
     } else {
-      // Default behavior if no onSave is provided
-      toast.success("Case created successfully");
+      toast.success(`Case ${values.caseFile} created successfully`);
     }
-    
-    // Reset form and close dialog
     form.reset();
     handleOpenChange(false);
   }
 
-  // Content of the dialog
   const dialogContent = (
     <DialogContent 
       className="sm:max-w-[425px] mx-auto w-[calc(100%-2rem)]"
@@ -80,6 +92,9 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
     >
       <DialogHeader>
         <DialogTitle>Create New Case</DialogTitle>
+        <DialogDescription>
+          Fill in the details below to create a new case. The case file number will be automatically generated.
+        </DialogDescription>
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -144,22 +159,12 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
                 <FormLabel>Case File Number</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="CF-XXXXXX" 
                     {...field} 
-                    onChange={(e) => {
-                      // Ensure the input always starts with CF-
-                      if (!e.target.value.startsWith('CF-')) {
-                        e.target.value = 'CF-' + e.target.value.replace('CF-', '');
-                      }
-                      // Limit to CF- plus 6 digits
-                      const regex = /^CF-\d{0,6}$/;
-                      if (regex.test(e.target.value) || e.target.value === 'CF-') {
-                        field.onChange(e);
-                      }
-                    }}
+                    readOnly 
+                    value={generatedCaseFileId || "Generating..."}
+                    className="border-dashed bg-muted text-muted-foreground"
                   />
                 </FormControl>
-                <FormDescription>Format: CF-XXXXXX (where X is a number)</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -176,7 +181,6 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
     </DialogContent>
   );
 
-  // Conditionally render with or without trigger button
   return showTrigger ? (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>

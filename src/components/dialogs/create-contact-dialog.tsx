@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -10,58 +10,83 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getAllCaseFileNumbers } from "@/services/localDbService"; 
+import { Contact } from "@/types/models";
 
-// Define a schema for contact form validation
+// Updated schema: added linkedCaseFileNumber, split name into firstName and lastName
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address").or(z.literal("")), // Allow empty string for optional email
   phone: z.string().min(7, "Phone number is required"),
   company: z.string().optional(),
   type: z.string().min(1, "Contact type is required"),
-  caseFileNumbers: z.array(z.string()).optional(),
+  linkedCaseFileNumber: z.string().optional(), // For linking to an existing case
 });
 
-// Infer the type from the zod schema
 export type ContactFormValues = z.infer<typeof formSchema>;
 
-// Define props for the CreateContactDialog component
 interface CreateContactDialogProps {
-  onCreateContact: (contact: any) => void;
+  onCreateContact: (contact: Contact) => void; 
 }
 
 export function CreateContactDialog({ onCreateContact }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
-  const isMobile = useIsMobile(); // Add the mobile check
+  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
+  const isMobile = useIsMobile();
   
-  // Initialize react-hook-form with zod validation
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       company: "",
       type: "Client",
+      linkedCaseFileNumber: undefined,
     },
   });
 
+  useEffect(() => {
+    if (open) {
+      const fetchCaseFiles = async () => {
+        try {
+          const numbers = await getAllCaseFileNumbers();
+          setCaseFileNumbers(numbers);
+        } catch (error) {
+          console.error("Failed to fetch case file numbers:", error);
+          toast.error("Failed to load case file numbers for selection.");
+        }
+      };
+      fetchCaseFiles();
+    }
+  }, [open]);
+
   // Handle form submission
-  function onSubmit(values: ContactFormValues) {
-    // Create a new contact with a generated UUID
-    const newContact = {
-      id: crypto.randomUUID(), // Generate a proper UUID string
-      ...values,
-    };
-    
-    // Pass the new contact to the parent component
-    onCreateContact(newContact);
-    
-    // Show success toast
-    toast.success("Contact created successfully");
-    
-    // Reset form and close dialog
-    form.reset();
-    setOpen(false);
+  async function onSubmit(values: ContactFormValues) {
+    try {
+      const newContact: Contact = {
+        id: crypto.randomUUID(),
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email || "", // Ensure email is string, even if empty
+        phone: values.phone,
+        company: values.company || "",
+        type: values.type,
+        linkedCaseFileNumber: values.linkedCaseFileNumber,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      onCreateContact(newContact);
+      toast.success(`Contact for ${values.firstName} ${values.lastName} created successfully.`);
+      form.reset();
+      setOpen(false);
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      toast.error("Failed to create contact.");
+    }
   }
 
   return (
@@ -75,29 +100,46 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Contact</DialogTitle>
+          <DialogDescription>
+            Fill in the details below to add a new contact. You can optionally link this contact to an existing case.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Smith" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Smith" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="email@example.com" type="email" {...field} />
                   </FormControl>
@@ -125,7 +167,7 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
               name="company"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company</FormLabel>
+                  <FormLabel>Company (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="Company Name" {...field} value={field.value || ""} />
                   </FormControl>
@@ -151,6 +193,8 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
                       <SelectItem value="Client">Client</SelectItem>
                       <SelectItem value="Solicitor">Solicitor</SelectItem>
                       <SelectItem value="General">General</SelectItem>
+                      <SelectItem value="Witness">Witness</SelectItem>
+                      <SelectItem value="Opposing Party">Opposing Party</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -160,28 +204,34 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
 
             <FormField
               control={form.control}
-              name="caseFileNumbers"
+              name="linkedCaseFileNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Case File Numbers</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter case file numbers, comma separated"
-                      {...field}
-                      value={field.value?.join(', ') || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value ? value.split(',').map(s => s.trim()) : []);
-                      }}
-                    />
-                  </FormControl>
+                  <FormLabel>Link to Case (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a case to link" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem> {/* Option for no selection */}
+                      {caseFileNumbers.map((cfn) => (
+                        <SelectItem key={cfn} value={cfn}>
+                          {cfn}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <DialogFooter>
-              <Button type="submit">Create Contact</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Creating..." : "Create Contact"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

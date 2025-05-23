@@ -54,6 +54,11 @@ const MeetingsPage = () => {
   });
   const isMobile = useIsMobile();
 
+  // ADD THIS useEffect for logging state changes
+  useEffect(() => {
+    console.log('State updated: editingNotesMeetingId =', editingNotesMeetingId, 'currentNotes =', currentNotes);
+  }, [editingNotesMeetingId, currentNotes]);
+
   // Load case details
   useEffect(() => {
     const fetchCaseDetails = async () => {
@@ -87,7 +92,7 @@ const MeetingsPage = () => {
       
       try {
         // Assuming you have an index for meetings by caseId
-        const meetingsData = await getItemsByIndex('meetings', 'by-caseId', caseId);
+        const meetingsData = await getItemsByIndex('meetings', 'caseId', caseId);
         
         // Sort meetings by date (newest first)
         // Ensure meetingsData is treated as Meeting[] from the imported type
@@ -107,6 +112,7 @@ const MeetingsPage = () => {
   }, [caseId]);
 
   const handleOpenNotesEditor = (meeting: Meeting) => {
+    console.log('Edit Notes clicked for meeting:', meeting.id, 'Current notes:', meeting.notes); // ADD THIS LOG
     setEditingNotesMeetingId(meeting.id);
     setCurrentNotes(meeting.notes || '');
   };
@@ -469,6 +475,8 @@ const MeetingsPage = () => {
 
                             {/* Notes Section for Upcoming Meetings */}
                             <div className="mt-2">
+                              {/* ADD THIS LOG before the condition */}
+                              {console.log(`Rendering upcoming meeting notes for: ${meeting.id}, editingNotesMeetingId is: ${editingNotesMeetingId}, condition: ${editingNotesMeetingId === meeting.id}`)}
                               {editingNotesMeetingId === meeting.id ? (
                                 <>
                                   <ReactQuill
@@ -587,6 +595,8 @@ const MeetingsPage = () => {
                             </div>
                             <div className={`${isMobile ? "mt-1.5" : "mt-2"} space-y-1.5`}>
                               {/* Notes Section for Past Meetings */}
+                              {/* ADD THIS LOG before the condition */}
+                              {console.log(`Rendering past meeting notes for: ${meeting.id}, editingNotesMeetingId is: ${editingNotesMeetingId}, condition: ${editingNotesMeetingId === meeting.id}`)}
                               {editingNotesMeetingId === meeting.id ? (
                                 <>
                                   <ReactQuill

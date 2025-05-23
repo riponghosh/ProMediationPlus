@@ -23,20 +23,20 @@ export interface CaseFileMetadata {
   accessControl?: 'private' | 'shared'; // Or more granular
 }
 
-// /**
-//  * Represents a contact (Client, Attorney, Witness, etc.).
-//  */
-// export interface Contact {
-//   id: string; // Unique identifier (e.g., UUID)
-//   name: string;
-//   email: string;
-//   phone?: string; // Optional phone number
-//   company?: string; // Optional company name
-//   type: string; // e.g., 'Client', 'Attorney'
-//   caseFileNumbers?: string[]; // Associated case file numbers
-//   createdAt?: Date; // Optional: Track creation time
-//   updatedAt?: Date; // Optional: Track update time
-// }
+/**
+ * Represents a contact (Client, Attorney, Witness, etc.).
+ */
+export interface Contact {
+  id: string; // Unique identifier (e.g., UUID)
+  name: string;
+  email: string;
+  phone?: string; // Optional phone number
+  company?: string; // Optional company name
+  type: string; // e.g., 'Client', 'Attorney'
+  linkedCaseFileNumber?: string; // Optional: ID of the case this contact is primarily associated with
+  createdAt?: Date; // Optional: Track creation time
+  updatedAt?: Date; // Optional: Track update time
+}
 
 /**
  * Represents a legal Case or case.
@@ -124,6 +124,8 @@ export interface Meeting {
   caseId: string;
   title: string;
   date: string; // ISO string format for date and time
+  time: string;
+  duration: string;
   location?: string; // Optional: can be physical or virtual (e.g., "Zoom Link")
   participants?: string[]; // Array of participant names or IDs
   agenda?: string; // Markdown or plain text
@@ -177,11 +179,11 @@ export interface MediatorMateDBSchema extends DBSchema {
     value: Note;
     indexes: { 'by-caseFileNumber': 'caseFileNumber'; 'createdAt': 'createdAt'; }; // 'createdAt' is a property of Note
   };
-  // contacts: { // Commenting out as Contact interface is commented out
-  //   key: string;
-  //   value: Contact; // Contact interface is commented out above
-  //   indexes: { 'by-name': 'name'; 'email': 'email'; 'type': 'type'; };
-  // };
+  contacts: {
+    key: string;
+    value: Contact;
+    indexes: { 'by-name': 'name'; 'email': 'email'; 'type': 'type'; };
+  };
   documents: {
     key: string;
     value: Document;
@@ -216,5 +218,9 @@ export interface MediatorMateDBSchema extends DBSchema {
     key: string;
     value: SavedForm;
     indexes: { 'by-formTitle': 'formTitle'; };
+  };
+  appCounters: { // New store for counters
+    key: string; // e.g., 'caseFileNumber'
+    value: { id: string; currentValue: number };
   };
 }

@@ -29,12 +29,6 @@ MediatorPro is a web application designed to help mediators manage their cases, 
     *   Local: `useState`, `useReducer` hooks.
 *   **Forms:** React Hook Form (`react-hook-form`) with Zod (`zod`) for schema validation.
 *   **Date/Time:** `date-fns`.
-*   **Backend & Database:** Firebase
-    *   **Authentication:** Firebase Authentication (email/password, potentially social providers).
-    *   **Database:** Firestore (NoSQL, collection/document based).
-    *   **Storage:** Firebase Cloud Storage for file uploads.
-    *   **Serverless Functions:** Firebase Cloud Functions (TypeScript, located in `functions/`).
-*   **Build System/Package Manager:** Bun (`bun.lockb`), scripts managed via npm/Bun in `package.json`.
 *   **Linting:** ESLint (`eslint`) with TypeScript plugins.
 *   **Charting/Visualization:** Recharts (`recharts`) for reports.
 
@@ -50,26 +44,21 @@ Familiarize yourself with the workspace structure. Key directories include:
         *   `ui/`: Shadcn/ui components (often customized or re-exported).
         *   `layout/`: Components related to page structure (Sidebar, Header, etc.).
         *   Domain-specific components (e.g., `components/cases/`).
-    *   `services/`: Modules for interacting with Firebase services.
-        *   `firestoreService.ts`: CRUD operations for Firestore.
-        *   `storageService.ts`: File upload/download operations for Firebase Storage.
+    *   `services/`: Modules for interacting with services.
         *   `authService.ts` (or similar): Authentication related functions.
     *   `contexts/`: React Context providers for global state (e.g., `AuthContext.tsx`).
     *   `hooks/`: Custom React hooks (e.g., `useToast.ts`).
     *   `types/`: TypeScript type definitions.
-        *   `models.ts`: Core data models for Firestore entities.
+        *   `models.ts`: Core data models
         *   `roles.ts`: User role definitions.
-    *   `lib/`: Utility functions, Firebase initialization (`firebase.ts`), constants.
     *   `routes/`: Route definitions and path constants (`paths.ts`).
     *   `assets/`: Static assets like images (if not in `public/`).
 *   `public/`: Static assets served directly by Vite.
-*   `functions/`: Firebase Cloud Functions source code (TypeScript).
+*   `functions/`: 
     *   `src/index.ts`: Main entry point for cloud functions.
     *   `src/setCustomClaims.ts`: Example function for managing user roles.
 *   **Root Configuration Files:**
-    *   `firebase.json`: Firebase project configuration (hosting, functions, rules).
-    *   `firestore.rules`: Security rules for Firestore.
-    *   `storage.rules`: Security rules for Firebase Storage.
+
     *   `vite.config.ts`: Vite build configuration.
     *   `tailwind.config.ts`: Tailwind CSS configuration.
     *   `tsconfig.json`: TypeScript compiler options for the frontend.
@@ -81,7 +70,7 @@ Familiarize yourself with the workspace structure. Key directories include:
 *   **Path Aliases:** Use `@/*` for imports from the `src/` directory (e.g., `import { MyComponent } from '@/components/MyComponent';`).
 *   **Naming Conventions:**
     *   Components: PascalCase (e.g., `UserProfile.tsx`).
-    *   Files (non-components): camelCase (e.g., `firestoreService.ts`) or kebab-case (e.g., `user-profile-form.tsx` if it's a complex, non-reusable form structure). Prefer camelCase for services and hooks.
+    *   Files (non-components): camelCase (e.g., `path.ts`) or kebab-case (e.g., `user-profile-form.tsx` if it's a complex, non-reusable form structure). Prefer camelCase for services and hooks.
     *   Variables & Functions: camelCase (e.g., `const userName = ...;`, `function getUserProfile() {}`).
     *   Interfaces & Types: PascalCase (e.g., `interface UserProfile {}`).
     *   CSS classes (if custom beyond Tailwind): kebab-case.
@@ -96,11 +85,6 @@ Familiarize yourself with the workspace structure. Key directories include:
 *   **State Management:**
     *   Use React Context (`AuthContext`, etc.) for global or widely shared state.
     *   For component-local state, use `useState` or `useReducer`.
-*   **Firebase Interactions:**
-    *   All Firebase SDK calls (Firestore, Storage, Auth, Functions) should be encapsulated within functions in the `src/services/` directory.
-    *   Service functions should handle data transformation, error catching, and return promises.
-    *   Implement comprehensive error handling (try-catch blocks) in service functions and propagate errors or user-friendly messages.
-    *   Use `async/await` for asynchronous operations.
 *   **Type Definitions:**
     *   Centralize all shared data model interfaces in `src/types/models.ts`.
     *   Define specific types for function parameters and return values.
@@ -115,8 +99,7 @@ Familiarize yourself with the workspace structure. Key directories include:
     *   Use the `useToast` hook (or a similar mechanism) to display user-friendly notifications for success and error states.
 *   **Security:**
     *   Always prioritize security.
-    *   Adhere to Firebase security rules defined in `firestore.rules` and `storage.rules`. When adding features that interact with Firebase, consider if rule updates are needed.
-    *   Validate user input on the client-side (using Zod with React Hook Form) and server-side (in Firebase Functions).
+
     *   Be mindful of role-based access control (RBAC) using custom claims. Ensure UI and service logic respects these roles.
 *   **Forms:**
     *   Use `react-hook-form` for all forms.
@@ -133,7 +116,6 @@ To get the best results when I ask you to write or modify code:
     *   **File Paths:** Always specify the full absolute path for new files or files to be modified (e.g., `c:/Users/dubli/Downloads/VS CODE/MEDIATORPRO/src/pages/NewPage.tsx`).
     *   **Existing Code:** If modifying existing code, point to the specific function, component, or lines. You can use "..." to denote existing, unchanged code.
     *   **Data Models:** Refer to existing types in `src/types/models.ts` or ask to define new ones there first.
-    *   **Consistency:** "Make this look like the `UserProfileForm`" or "Follow the pattern in `firestoreService.ts` for this new function."
 *   **Iterative Development:**
     *   For complex features, I may break down the request into smaller, manageable steps.
     *   I will review your suggestions and provide feedback for refinement.
@@ -147,11 +129,7 @@ To get the best results when I ask you to write or modify code:
     4.  **State:** Integrate with global state (Contexts) if necessary.
     5.  **Routing:** Update routes in `src/routes/paths.ts` and `src/App.tsx`.
     6.  **Navigation:** Update sidebar or other navigation elements.
-    7.  **Security Rules:** Consider if `firestore.rules` or `storage.rules` need updates.
-*   **Firebase Specifics:**
-    *   **Firestore:** Clearly define collection paths, document IDs, and query conditions.
-    *   **Storage:** Specify storage paths and metadata for file uploads.
-    *   **Functions:** Define triggers, input parameters, and return values for Firebase Functions.
+    7.  **Security Rules:** Consider if `storage.rules` need updates.
 *   **UI Development:**
     *   Specify which Shadcn/ui components to use or adapt (e.g., `Button`, `Dialog`, `Table`).
     *   Describe the desired layout, responsiveness, and any specific styling requirements using Tailwind CSS.
@@ -160,15 +138,11 @@ To get the best results when I ask you to write or modify code:
 ## 7. Key Files & Paths (Quick Reference)
 
 *   **Data Models:** `src/types/models.ts`, `src/types/roles.ts`
-*   **Firebase Services:** `src/services/firestoreService.ts`, `src/services/storageService.ts`, (potentially `src/services/authService.ts`)
-*   **Firebase Config:** `src/lib/firebase.ts`
 *   **Global State Contexts:** `src/contexts/` (e.g., `AuthContext.tsx`)
 *   **Reusable UI Components:** `src/components/`
 *   **Shadcn/ui Components:** `src/components/ui/`
 *   **Page Components:** `src/pages/`
 *   **Routing Logic:** `src/routes/paths.ts`, `src/App.tsx`
-*   **Firebase Security Rules:** `firestore.rules`, `storage.rules`
-*   **Firebase Cloud Functions:** `functions/src/index.ts` (and other files in `functions/src/`)
 *   **Tailwind Config:** `tailwind.config.ts`
 *   **Vite Config:** `vite.config.ts`
 
@@ -182,14 +156,11 @@ To get the best results when I ask you to write or modify code:
     *   Encapsulate business logic and API calls in service layers.
     *   Use descriptive names for variables, functions, and components.
     *   Implement error handling and provide user feedback (e.g., toasts).
-    *   Consider performance implications, especially for Firestore queries.
     *   Write JSDoc comments for public functions and components.
 *   **Don't:**
     *   Introduce new third-party libraries without explicit instruction.
     *   Write overly complex or monolithic components.
     *   Duplicate code; create reusable functions or components instead.
-    *   Hardcode sensitive information (use environment variables for Firebase config, which is handled by Firebase SDKs).
-    *   Bypass service layers for direct Firebase calls in UI components unless it's a very simple, localized case and discussed.
     *   Leave `console.log` statements in production code.
     *   Commit commented-out code unless it's for a specific, temporary reason.
 
