@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,6 +21,8 @@ import { Info, FileText, ChevronLeft, Download } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/layout";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAllCaseFileNumbers } from "@/services/localDbService";
 
 // Import PDF generation libraries
 import jsPDF from 'jspdf';
@@ -28,6 +30,7 @@ import html2canvas from 'html2canvas';
 
 // --- Zod Schema Definition ---
 const separationAgreementSchema = z.object({
+    linkedCaseFileNumber: z.string().optional(), // Added for case file number
     // Preamble/Header
     agreementMadeDate: z.string().optional().default(new Date().toISOString().split('T')[0]),
     mediatorName: z.string().optional(),
@@ -189,9 +192,11 @@ const AgreementInputField: React.FC<AgreementInputFieldProps> = ({ control, name
 // --- Main Form Component ---
 export function SeparationAgreementBuilder() {
     const isMobile = useIsMobile();
+    const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
     const form = useForm<SeparationAgreementData>({
         resolver: zodResolver(separationAgreementSchema),
         defaultValues: {
+            linkedCaseFileNumber: undefined, // Added default value
             agreementMadeDate: new Date().toISOString().split('T')[0],
             partyAName: "",
             partyAAddress: "",
@@ -253,6 +258,19 @@ export function SeparationAgreementBuilder() {
     const watchedPartyAName = form.watch("partyAName");
     const watchedPartyBName = form.watch("partyBName");
     const watchedMediatorName = form.watch("mediatorName");
+
+    useEffect(() => {
+        const fetchCaseFiles = async () => {
+            try {
+                const numbers = await getAllCaseFileNumbers();
+                setCaseFileNumbers(numbers);
+            } catch (error) {
+                console.error("Failed to fetch case file numbers:", error);
+                toast.error("Failed to load case file numbers for selection.");
+            }
+        };
+        fetchCaseFiles();
+    }, []);
 
     React.useEffect(() => {
         if (watchedPartyAName && !form.getValues("partyASignatureName")) {
@@ -380,6 +398,34 @@ export function SeparationAgreementBuilder() {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 p-1 md:p-2 max-w-5xl mx-auto">
+                        <FormField
+                            control={form.control}
+                            name="linkedCaseFileNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Link to Case (Optional)</FormLabel>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a case to link" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="__NONE__">None</SelectItem>
+                                            {caseFileNumbers.map((cfn) => (
+                                                <SelectItem key={cfn} value={cfn}>
+                                                    {cfn}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <Alert variant="default" className="bg-purple-50 border-purple-200">
                             <Info className="h-4 w-4 text-purple-700" />

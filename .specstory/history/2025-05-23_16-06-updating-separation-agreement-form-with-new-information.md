@@ -1447,6 +1447,176 @@ So how does it work. Should there not be a button that saves as pdf on the botto
 
 _**Assistant**_
 
+You are correct. My apologies, in the previous full code response, I included the logic for the PDF download functionality and the "Download as PDF" button, but I should have explicitly pointed out its placement and distinction.
+
+Yes, there is indeed a separate button at the bottom of the form specifically for downloading the agreement as a PDF. This is distinct from the "Save Separation Agreement Data" button.
+
+Here's the relevant part of the JSX from the previous response showing the two buttons:
+
+````tsx
+// ...existing code...
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-10">
+                            <Button type="submit" size="lg" id="save-agreement-button">
+                                <FileText className="mr-2 h-5 w-5" /> Save Separation Agreement Data
+                            </Button>
+                            <Button type="button" size="lg" onClick={handleDownloadPdf} variant="outline" id="download-pdf-button">
+                                <Download className="mr-2 h-5 w-5" /> Download as PDF
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
+            </div>
+        </Layout>
+    );
+}
+````
+
+**How it works:**
+
+1.  **"Save Separation Agreement Data" Button:** This button is of `type="submit"`. When clicked, it triggers the `onSubmit` function of the form, which currently logs the data and shows a toast notification. This button is for saving the form data within your application (e.g., to a database or local storage, though that part is marked as a TODO).
+2.  **"Download as PDF" Button:** This button is of `type="button"`. When clicked, it calls the `handleDownloadPdf` JavaScript function.
+    *   The `handleDownloadPdf` function uses the `html2canvas` library to take a "screenshot" of the entire form content.
+    *   Then, it uses the `jspdf` library to take that screenshot and place it into a new PDF document.
+    *   If the form content is too long for one PDF page, it automatically splits it across multiple pages.
+    *   Finally, it prompts your browser to download the generated `SeparationAgreement.pdf` file.
+
+So, you have two distinct actions available at the bottom of the form: one to save the data electronically within the app's system, and another to generate and download a printable PDF version of the filled-out form.
+
+---
+
+_**User**_
+
+Push to github as new branch agreement-update. Give me termianl commands. Dont use &&
+
+---
+
+_**Assistant**_
+
+Okay, here are the terminal commands to push your changes to a new GitHub branch named `agreement-update`.
+
+First, ensure you have saved all the changes in your editor.
+
+Then, run these commands one by one in your terminal:
+
+```bash
+git checkout -b agreement-update
+```
+
+```bash
+git add .
+```
+
+```bash
+git commit -m "feat: Update Separation Agreement form with new content and PDF download"
+```
+
+```bash
+git push -u origin agreement-update
+```
+
+---
+
+_**User**_
+
+PS C:\Users\dubli\Desktop\PROMEDIATION> git push -u origin agreement-update
+remote: Permission to ProMediationPlus/ProMediationPlus.git denied to EmeraldPathways.
+fatal: unable to access 'https://github.com/ProMediationPlus/ProMediationPlus.git/': The requested URL returned error: 403
+
+---
+
+_**Assistant**_
+
+It looks like you're encountering a `403 Forbidden` error. This error from GitHub means that the user `EmeraldPathways`, which your local Git is configured to use for authenticating with GitHub, does not have the necessary permissions to push to the `ProMediationPlus/ProMediationPlus.git` repository.
+
+Here are common reasons and steps to troubleshoot this:
+
+1.  **Check Repository Permissions:**
+    *   Ensure that the GitHub user `EmeraldPathways` has "Write" access to the `ProMediationPlus/ProMediationPlus` repository. The repository owner or an administrator for `ProMediationPlus` needs to grant these permissions. You can check this by going to the repository on GitHub > Settings > Collaborators and teams.
+
+2.  **Verify Git Credentials:**
+    *   Your local Git client might be using outdated or incorrect credentials for `EmeraldPathways`, or it might be configured for a different GitHub account that doesn't have access.
+    *   You can check and update your credentials. On Windows, Git often uses the Windows Credential Manager. Search for "Credential Manager" in the Windows search bar, go to "Windows Credentials", and look for entries related to `github.com`. You might need to edit or remove the existing one so Git prompts you to log in again.
+
+3.  **Personal Access Token (PAT):**
+    *   If you're using HTTPS to connect to GitHub (which is common), GitHub now requires Personal Access Tokens (PATs) instead of passwords for Git operations, especially if you have Two-Factor Authentication (2FA) enabled.
+    *   Ensure you're using a PAT with the correct scopes (e.g., `repo` scope for pushing to repositories). If you are using a PAT, it might have expired or been revoked.
+
+4.  **SSH Key (if using SSH):**
+    *   If you're using SSH (URL would be like `git@github.com:ProMediationPlus/ProMediationPlus.git`), ensure your SSH key is correctly added to the `EmeraldPathways` GitHub account and that your local SSH agent is using the correct key.
+
+**To resolve this, you'll likely need to:**
+
+*   Confirm with the owner/admin of the `ProMediationPlus` organization or repository that the `EmeraldPathways` user account has the correct permissions.
+*   Or, if `EmeraldPathways` is not the correct account you intend to use for this repository, you'll need to update your local Git configuration or credentials to use the correct GitHub account that *does* have push access.
+
+---
+
+_**User**_
+
+I do not want to use Emerald Pathways for this project. Just ProMediationPlus
+
+---
+
+_**Assistant**_
+
+Okay, I understand. The `403 Forbidden` error indicates that the Git client on your machine is trying to authenticate with GitHub as the user `EmeraldPathways`, but that user doesn't have permission to push to the `ProMediationPlus/ProMediationPlus.git` repository.
+
+You need to ensure your local Git configuration is set up to use your `ProMediationPlus` GitHub identity for this specific repository, or globally if `ProMediationPlus` is your default GitHub account for all projects.
+
+Here's how you can check and update your Git configuration:
+
+1.  **Check your local repository's Git configuration:**
+    Navigate to your project directory (``) in the terminal and run:
+    ```bash
+    git config user.name
+    ```
+    ```bash
+    git config user.email
+    ```
+    If these show details related to `EmeraldPathways` or are blank, you should set them for this repository to match your `ProMediationPlus` GitHub account.
+
+2.  **Set your Git user for this specific repository:**
+    If the commands above didn't show your `ProMediationPlus` details, run the following commands in your project directory, replacing `"Your ProMediationPlus Name"` and `"your_promediationplus_email@example.com"` with the actual name and email associated with your `ProMediationPlus` GitHub account:
+    ```bash
+    git config user.name "Your ProMediationPlus Name"
+    ```
+    ```bash
+    git config user.email "your_promediationplus_email@example.com"
+    ```
+    This sets the user identity specifically for this repository.
+
+3.  **Check Windows Credential Manager:**
+    Git for Windows often uses the Windows Credential Manager to store credentials for HTTPS URLs.
+    *   Open "Credential Manager" from the Windows Start Menu.
+    *   Go to "Windows Credentials".
+    *   Look for any credentials related to `github.com`. If you find one that seems to be associated with `EmeraldPathways`, you might need to remove it or edit it.
+    *   After removing or editing, the next time you try to push, Git should prompt you to log in again. Make sure to log in with your `ProMediationPlus` GitHub account credentials (username and a Personal Access Token if you have 2FA enabled).
+
+4.  **Retry the push:**
+    After ensuring your Git config is correct and potentially clearing old credentials from Credential Manager, try the push command again:
+    ```bash
+    git push -u origin agreement-update
+    ```
+
+**Important Considerations:**
+
+*   The `user.name` and `user.email` in your Git config are primarily for authorship in commits. The actual authentication to GitHub (when pushing over HTTPS) is handled by the credentials you provide when prompted, or by those stored in the Credential Manager, or via a Personal Access Token.
+*   Ensure that the `ProMediationPlus` GitHub account itself has **write permissions** to the `ProMediationPlus/ProMediationPlus.git` repository. Changing your local Git config won't grant permissions if the account doesn't have them on GitHub.
+
+If you continue to have issues, the problem might be with how GitHub is authenticating your `ProMediationPlus` account (e.g., needing a Personal Access Token instead of a password, especially if 2FA is enabled on the `ProMediationPlus` account).
+
+---
+
+_**User**_
+
+PS C:\Users\dubli\Desktop\PROMEDIATION> git push -u origin agreement-update
+remote: Permission to ProMediationPlus/ProMediationPlus.git denied to EmeraldPathways.
+fatal: unable to access 'https://github.com/ProMediationPlus/ProMediationPlus.git/': The requested URL returned error: 403
+
+---
+
+_**Assistant**_
+
 
 
 ---
