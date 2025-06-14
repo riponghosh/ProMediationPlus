@@ -31,11 +31,15 @@ import GuidesGettingStarted from "./pages/guides/GuidesGettingStarted";
 import GuidesBusinessSetUp from "./pages/guides/GuidesBusinessSetUp"; // Added import
 import GuidesGrowYourBusiness from "./pages/guides/GuidesGrowYourBusiness"; // Added import
 import GuidesMediateSuccess from "./pages/guides/GuidesMediateSuccess"; // Added import
-import { MediationAgreementBuilder } from "./pages/agreements/MediationAgreement";
-import { ParentingAgreementBuilder } from "./pages/agreements/ParentingAgreement";
-import { SeparationAgreementBuilder } from "./pages/agreements/SeperationAgreement";
+import { MediationAgreementBuilder } from "./pages/templates/MediationAgreement";
+import { ParentingAgreementBuilder } from "./pages/templates/ParentingAgreement";
+import { SeparationAgreementBuilder } from "./pages/templates/SeperationAgreement";
 import NotFound from "./pages/NotFound";
 import CalendlyCallbackPage from "./pages/CalendlyCallbackPage"; // Added import
+import CohabitingAgreement from "./pages/templates/CohabitingAgreement"; // Corrected import path
+import CommercialAgreement from "./pages/templates/CommercialAgreement"; // Reverted import path
+import WorkplaceAgreement from "./pages/templates/WorkplaceAgreement"; // Added import
+import { TemplateBuilder } from "./pages/templates/TemplateBuilder";
 
 // Admin section imports
 import AdminLayout from "./components/layout/admin/AdminLayout";
@@ -104,6 +108,10 @@ const App = () => (
           <Route path="/parenting-template" element={<ParentingAgreementBuilder />} /> {/* Add route for ParentingAgreementBuilder */}
           <Route path="/separation-template" element={<SeparationAgreementBuilder />} /> {/* Add route for SeparationAgreementBuilder */}
           <Route path="/calendly/callback" element={<CalendlyCallbackPage />} /> {/* Added Calendly callback route */}
+          <Route path="/cohabiting-template" element={<CohabitingAgreement />} /> {/* Corrected component */}
+          <Route path="/commercial-agreement-template" element={<CommercialAgreement />} />
+          <Route path="/workplace-agreement-template" element={<WorkplaceAgreement />} /> {/* Added route */}
+          <Route path="/template-builder" element={<TemplateBuilder />} />
           
           {/* Admin routes with AdminLayout */}
           <Route path="/admin" element={<AdminLayout />}>

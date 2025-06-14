@@ -251,7 +251,7 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-amber-600 h-4 w-4" />
-															Mediation Agreement Template
+															Mediation Agreement
 														</CardTitle>
 													</div>
 												</CardHeader>
@@ -268,7 +268,7 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-green-600 h-4 w-4" />
-															Parenting Agreement Template
+															Parenting Agreement
 														</CardTitle>
 													</div>
 												</CardHeader>
@@ -285,7 +285,7 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-purple-600 h-4 w-4" />
-															Separation Agreement Template
+															Separation Agreement
 														</CardTitle>
 													</div>
 												</CardHeader>
@@ -302,7 +302,7 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-blue-600 h-4 w-4" />
-															Agreement To Mediate Template
+															Agreement To Mediate
 														</CardTitle>
 													</div>
 												</CardHeader>
@@ -319,7 +319,7 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-teal-600 h-4 w-4" />
-															Child Maintenance Agreement Template
+															Child Maintenance Agreement
 														</CardTitle>
 													</div>
 												</CardHeader>
@@ -336,13 +336,47 @@ const TemplatesPage = () => {
 													<div className="flex items-start justify-between">
 														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
 															<FileSignature className="mr-2 text-orange-600 h-4 w-4" />
-															Cohabiting Agreement Template
+															Cohabiting Agreement
 														</CardTitle>
 													</div>
 												</CardHeader>
 												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
 													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
 														Agreement template for unmarried couples living together, outlining property rights, financial responsibilities, and other arrangements.
+													</p>
+												</CardContent>
+											</Card>
+
+											{/* Commercial Mediation Agreement Card */}
+											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-slate-300 bg-slate-100/50" onClick={() => navigate('/commercial-agreement-template')}>
+												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-slate-100`}>
+													<div className="flex items-start justify-between">
+														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
+															<FileSignature className="mr-2 text-slate-600 h-4 w-4" />
+															Commercial Mediation Agreement
+														</CardTitle>
+													</div>
+												</CardHeader>
+												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
+													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
+														Template for commercial disputes, outlining mediation terms, confidentiality, and party acknowledgements.
+													</p>
+												</CardContent>
+											</Card>
+
+											{/* Organisational & Workplace Agreement Card */}
+											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-cyan-200 bg-cyan-50/30" onClick={() => navigate('/workplace-agreement-template')}>
+												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-cyan-50`}>
+													<div className="flex items-start justify-between">
+														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
+															<FileSignature className="mr-2 text-cyan-600 h-4 w-4" />
+															Organisational & Workplace Agreement
+														</CardTitle>
+													</div>
+												</CardHeader>
+												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
+													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
+														Agreement for resolving workplace and organisational disputes, covering terms, confidentiality, and resolutions.
 													</p>
 												</CardContent>
 											</Card>
