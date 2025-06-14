@@ -222,8 +222,8 @@ export function CaseDetails({ case: caseData, onSave }: CaseDetailsProps) {
           value="forms"
           className={isMobile ? "text-xs py-1.5 px-2 flex flex-col items-center h-auto flex-shrink-0" : "py-2"}
         >
-          {isMobile && <FileText className="h-4 w-4 mb-1" />}
-          Forms
+          {isMobile && <StickyNote className="h-4 w-4 mb-1" />}
+          Notes
         </TabsTrigger>
         <TabsTrigger
           value="timeline"
@@ -354,53 +354,39 @@ export function CaseDetails({ case: caseData, onSave }: CaseDetailsProps) {
           <CardHeader className={isMobile ? "pb-2 px-3 py-3" : "pb-2"}>
             <CardTitle className={`flex items-center justify-between ${isMobile ? "mt-1" : ""}`}>
               <div className="flex items-center gap-2">
-                <FileText className={`${isMobile ? "h-4 w-4" : "h-5 w-5"} text-primary`} />
-                <span className={isMobile ? "text-sm" : ""}>Forms Overview</span>
+                <StickyNote className={`${isMobile ? "h-4 w-4" : "h-5 w-5"} text-primary`} />
+                <span className={isMobile ? "text-sm" : ""}>Recent Notes</span>
               </div>
               <Button variant="outline" size={isMobile ? "sm" : "default"} className={`${isMobile ? "px-1.5 py-0.5 h-auto" : ""} flex items-center gap-1`} asChild>
-                <Link to={`/case-files/${caseData.id}/forms`}> {/* Corrected this line */}
+                <Link to={`/case-files/${caseData.id}/notes`}>
                   <ExternalLink className={isMobile ? "h-2.5 w-2.5" : "h-4 w-4"} />
                   <span className={isMobile ? "text-[11px]" : "text-xs"}>View Full Page</span>
                 </Link>
               </Button>
             </CardTitle>
-            <CardDescription className={isMobile ? "text-xs" : ""}>Summary of form completion status</CardDescription>
+            <CardDescription className={isMobile ? "text-xs" : ""}>Summary of recent notes</CardDescription>
           </CardHeader>
           <CardContent className={isMobile ? "p-3" : ""}>
-            {/* Example Content - Replace with actual form status logic */}
+            {/* Example Content - Replace with actual note status logic */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">Client Enquiry Form</span>
+                  <StickyNote className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm">Note 1 Title</span>
                 </div>
-                <Badge variant="outline" className={`${isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"} bg-green-50 text-green-700 border-green-200`}>Completed</Badge>
+                <Badge variant="outline" className={`${isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"}`}>10/06/2025</Badge>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm">Agreement To Mediate</span>
+                  <StickyNote className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm">Note 2 Title</span>
                 </div>
-                <Badge variant="outline" className={`${isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"} bg-amber-50 text-amber-700 border-amber-200`}>Pending</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">Statement Of Means</span>
-                </div>
-                <Badge variant="outline" className={isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"}>Not started</Badge>
-              </div>
-               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">Billing Form</span>
-                </div>
-                <Badge variant="outline" className={isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"}>Not started</Badge>
+                <Badge variant="outline" className={`${isMobile ? "text-[10px] px-1.5 py-0.5" : "text-xs"}`}>08/06/2025</Badge>
               </div>
             </div>
           </CardContent>
           <CardFooter className={`${isMobile ? "text-xs px-3 py-2" : "text-xs"} text-muted-foreground`}>
-            <p>Full forms available on Forms page</p>
+            <p>Full notes available on Notes page</p>
           </CardFooter>
         </Card>
       </TabsContent>

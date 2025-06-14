@@ -45,6 +45,16 @@ const navItems: NavItem[] = [
     icon: Briefcase,
   },
   {
+    title: "Documents",
+    href: "/documents",
+    icon: FileText,
+  },
+  {
+    title: "Notes",
+    href: "/notes",
+    icon: FileSpreadsheet,
+  },
+  {
     title: "Calendar",
     href: "/calendar",
     icon: Calendar,
@@ -74,11 +84,11 @@ const navItems: NavItem[] = [
     href: "/templates",
     icon: FileOutput,
   },
-  {
-    title: "Forms",
-    href: "/forms",
-    icon: ClipboardCheck,
-  },
+  // {
+  //   title: "Forms",
+  //   href: "/forms",
+  //   icon: ClipboardCheck,
+  // },
   {
     title: "Guides",
     href: "/guides",
@@ -89,11 +99,11 @@ const navItems: NavItem[] = [
     href: "/billing",
     icon: CreditCard,
   },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: BarChart,
-  },
+  // {
+  //   title: "Reports",
+  //   href: "/reports",
+  //   icon: BarChart,
+  // },
   {
     title: "Settings",
     href: "/settings",

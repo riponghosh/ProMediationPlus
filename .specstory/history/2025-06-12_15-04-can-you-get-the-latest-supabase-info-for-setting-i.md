@@ -10,7 +10,1051 @@ Can you get the latest supabase info for setting it up here.
 
 _**Assistant**_
 
+Supabase is a backend-as-a-service platform. Here's a summary of how to set it up, based on the documentation:
 
+**1. Installation & Project Setup**
+
+*   **Using `npx` (for Next.js, React, SvelteKit):**
+    *   Next.js: `npx create-next-app -e with-supabase`
+    *   React:
+        ```bash
+        npx create-react-app my-app --use-npm
+        cd my-app
+        npm install @supabase/supabase-js
+        ```
+    *   SvelteKit:
+        ```bash
+        npm create svelte@latest my-app
+        cd my-app
+        npm install
+        npm install @supabase/supabase-js @supabase/ssr
+        ```
+*   **General CLI:**
+    *   Initialize a local Supabase project: `npx supabase init`
+    *   Link to your remote Supabase project: `supabase link --project-ref <your-project-id>`
+    *   Pull database schema: `supabase db pull`
+    *   Create a new migration: `supabase migration new <migration-name>`
+
+**2. Environment Variables**
+
+*   Create a `.env.local` file in your project root.
+*   Add your Supabase project URL and anonymous key:
+    ```text
+    NEXT_PUBLIC_SUPABASE_URL=<your_supabase_project_url>
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_supabase_anon_key>
+    ```
+    (Note: The prefix `NEXT_PUBLIC_` is specific to Next.js. For other frameworks, it might be `PUBLIC_` or different, e.g., `VITE_` for Vite projects.)
+
+**3. Client Initialization**
+
+*   **SvelteKit (v0.9.0+ in `src/hooks.server.ts`):**
+    ```javascript
+    // src/hooks.server.ts
+    import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public'
+    import { createSupabaseServerClient } from '@supabase/auth-helpers-sveltekit'
+    import type { Handle } from '@sveltejs/kit'
+
+    export const handle: Handle = async ({ event, resolve }) => {
+      event.locals.supabase = createSupabaseServerClient({
+        supabaseUrl: PUBLIC_SUPABASE_URL,
+        supabaseKey: PUBLIC_SUPABASE_ANON_KEY,
+        event,
+      })
+
+      event.locals.safeGetSession = async () => {
+        const {
+          data: { user },
+          error,
+        } = await event.locals.supabase.auth.getUser()
+        if (error) return { session: null, user: null }
+
+        const {
+          data: { session },
+        } = await event.locals.supabase.auth.getSession()
+        return { session, user }
+      }
+
+      return resolve(event, {
+        filterSerializedResponseHeaders(name) {
+          return name === 'content-range' || name === 'x-supabase-api-version'
+        },
+      })
+    }
+    ```
+*   **SvelteKit (older, v0.8.0 in `src/lib/db.js` or similar):**
+    ```javascript
+    import { createClient } from '@supabase/auth-helpers-sveltekit'
+    import { env } from '$env/dynamic/public'
+
+    export const supabaseClient = createClient(env.PUBLIC_SUPABASE_URL, env.PUBLIC_SUPABASE_ANON_KEY)
+    ```
+    And ensure it's imported in server and client hooks:
+    ```typescript
+    // src/hooks.server.ts or src/hooks.client.ts
+    import '$lib/db'
+    ```
+
+**4. Basic Database Operations (SQL Example)**
+
+You can use the Supabase SQL Editor or migration files:
+
+```sql
+-- Create a table
+create table instruments (
+  id bigint primary key generated always as identity,
+  name text not null
+);
+
+-- Insert data
+insert into instruments (name)
+values
+  ('violin'),
+  ('viola'),
+  ('cello');
+
+-- Enable Row Level Security (RLS)
+alter table instruments enable row level security;
+```
+
+**5. Using Shadcn/UI with Supabase (Optional)**
+
+If your project uses Shadcn/UI (as indicated by some setup snippets), you can add components like:
+
+```bash
+npx shadcn-ui@latest add input
+npx shadcn-ui@latest add calendar
+npx shadcn-ui@latest add button
+```
+
+This information should help you get started with Supabase in your project. Remember to adapt the environment variable names and client initialization code to your specific framework (React with Vite in your case).
+
+---
+
+_**User**_
+
+Push to git first. CaseFile-Update branch
+
+---
+
+_**Assistant**_
+
+Okay, I can help with that. What would you like the commit message to be?
+
+---
+
+_**User**_
+
+Case file summary update
+
+---
+
+_**Assistant**_
+
+Okay, I'll push the changes to a new branch named `CaseFile-Update` with the commit message "Case file summary update".
+ I've pushed the changes to the `CaseFile-Update` branch on GitHub.
+
+---
+
+_**User**_
+
+Can you start the process of adding supabase to this project. Supbase will handle all data. so it will need to be linked by case file number and UUID. Do you understand
+
+---
+
+_**Assistant**_
+
+Yes, I understand. You want to integrate Supabase as the primary database for your MediatorPro application. This will involve:
+
+1.  **Setting up Supabase:** Installing the necessary client libraries and configuring your application to connect to your Supabase instance.
+2.  **Data Modeling:** Ensuring your data structures (tables in Supabase) include a UUID (likely as the primary key `id`) and a `case_file_number` for linking and identification.
+3.  **Refactoring Services:** Updating your existing data service layer to interact with Supabase instead of your current backend or local storage for data operations.
+4.  **Authentication (Potentially):** Leveraging Supabase Auth for user management if desired.
+
+Let's start by installing the Supabase client library and setting up the basic configuration.
+
+First, I'll install the Supabase client library:
+ Yes, I understand. We're going to integrate Supabase to handle all data, linking records by case file number and UUID.
+
+I've started by installing the Supabase JavaScript client library.
+
+Next, I'll create a Supabase client configuration file. This will allow the application to connect to your Supabase instance.
+
+Where would you like to store your Supabase client configuration? A common practice is to put it in `src/lib/supabaseClient.ts` or `src/services/supabaseService.ts`.
+
+Also, you'll need to create a `.env` file at the root of your project and add your Supabase URL and anon key. For Vite projects, these environment variables should be prefixed with `VITE_`.
+
+Example `.env` file content:
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+Please make sure to replace `your-supabase-url` and `your-supabase-anon-key` with your actual Supabase project URL and public anonymous key. You can find these in your Supabase project settings.
+
+---
+
+_**User**_
+
+Where will i find the supabase url
+
+---
+
+_**Assistant**_
+
+You can find your Supabase project URL and anon key in your Supabase project's dashboard.
+
+Here's how to navigate to it:
+
+1.  Go to [supabase.com](https://supabase.com) and log in.
+2.  Select your project from the list of projects.
+3.  In the left sidebar, navigate to **Project Settings** (usually represented by a gear icon).
+4.  Under Project Settings, select **API**.
+5.  On the API page, you will find:
+    *   **Project URL**: This is your `VITE_SUPABASE_URL`.
+    *   **Project API keys**: You'll find the `anon` `` key here. This is your `VITE_SUPABASE_ANON_KEY`.
+
+Copy these values and paste them into your `.env` file at the root of your MediatorPro project, like so:
+
+```env
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Make sure to replace `your-supabase-url` and `your-supabase-anon-key` with the actual values from your Supabase dashboard.
+
+Once you've updated your `.env` file, I can proceed with creating the Supabase client configuration file (e.g., `src/lib/supabaseClient.ts`). Would you like me to create it in `src/lib/supabaseClient.ts`?
+
+---
+
+_**User**_
+
+Ok i found it. Its on .env now
+
+---
+
+_**Assistant**_
+
+Great! Now that your `.env` file is set up, I'll create the Supabase client configuration file at `c:/Users/dubli/Desktop/PROMEDIATION/src/lib/supabaseClient.ts`.
+
+This file will initialize the Supabase client using the environment variables you just added. Great! I've created the Supabase client configuration file at `supabaseClient.ts`.
+
+This file initializes the Supabase client using the environment variables you've set.
+
+The next step is to generate TypeScript type definitions from your Supabase database schema. This will provide type safety when interacting with your data.
+
+First, you'll need to install the Supabase CLI as a dev dependency:
+ Great! I've created the Supabase client configuration file at `supabaseClient.ts`.
+
+This file initializes the Supabase client using the environment variables you've set.
+
+The next step is to generate TypeScript types from your Supabase database schema. This will provide type safety when interacting with your data. To do this, I've installed the Supabase CLI as a dev dependency.
+
+Now, I'll run the Supabase CLI command to generate the types. This command will connect to your Supabase project (using the credentials you've provided) and create a `supabase.ts` file in your `` directory.
+
+ Okay, great! Now that the environment variables are set up, let's address the "Access token not provided" error. This usually means you need to log in to Supabase CLI.
+
+I'll run the command to log you in. Please follow any instructions that appear in the terminal, which might involve opening a browser window to authenticate. Now that you're logged in, I'll try generating the Supabase types again. Now that you're logged in, I've regenerated the TypeScript types from your Supabase schema. The `supabase.ts` file should now contain the necessary type definitions.
+
+Next, I'll help you integrate Supabase into your services and components. What would you like to work on first? For example, we could start by refactoring `localDbService.ts` to use Supabase.
+
+---
+
+_**User**_
+
+I need to set up the tables on supabase for all the elements in my web app. So calendar, meetings, case files etc. Can you look throuhg my project directory to work out what we will need and the sql code to create them. @workspace
+
+---
+
+_**Assistant**_
+
+Okay, I will analyze your project to determine the necessary Supabase tables and then generate the SQL for them.
+
+Based on your project structure and the functionalities described in your `PMP.instructions.md`, here's a preliminary list of potential data entities we'll need tables for:
+
+1.  **Users:** (Handled by Supabase Auth, but we might need a `profiles` table for additional user-specific app data not covered by `auth.users`)
+2.  **Cases:** Core entity for managing mediation cases.
+3.  **Contacts/Clients:** Individuals involved in cases.
+4.  **Documents:** Files related to cases.
+5.  **Billing/Invoices:** Financial records for cases.
+6.  **Appointments/Meetings/Sessions:** Scheduled events, possibly linked to Calendly.
+7.  **Tasks:** To-do items, potentially linked to cases or users.
+8.  **Notes:** General or case-specific notes.
+9.  **Templates:** Pre-defined document or form templates.
+10. **Chat Messages:** If real-time chat is a feature.
+11. **Activities:** A log of actions or events within the system.
+
+I'll start by looking for existing data models in `models.ts` to get a better understanding of the data structures you're currently using or planning. 
+
+---
+
+_**User**_
+
+Keep going
+
+---
+
+_**Assistant**_
+
+Okay, I've analyzed the data models in your `models.ts` file. Based on these, I'll generate the SQL statements to create the corresponding tables in your Supabase database.
+
+Here are the key considerations I've made:
+*   **Primary Keys:** Most tables will use a `UUID` as their primary key, typically named `id`, with a default value of `gen_random_uuid()`.
+*   **Foreign Keys:** Relationships between tables (e.g., a `Task` belonging to a `Case`) will be established using foreign keys.
+*   **Timestamps:** `created_at` and `updated_at` columns will be of type `TIMESTAMPTZ` and will default to the current transaction's timestamp.
+*   **Data Types:** TypeScript types have been mapped to appropriate PostgreSQL types (e.g., `string` to `TEXT` or `VARCHAR`, `Date` to `TIMESTAMPTZ`, `boolean` to `BOOLEAN`, `string[]` to `TEXT[]`, `any` or `object` to `JSONB`).
+*   **Nullability:** Optional fields in your TypeScript models will be nullable in the database.
+*   **User Association:** I'll add a `user_id UUID REFERENCES auth.users(id)` column to top-level tables like `Cases`, `Contacts`, etc., to associate records with the authenticated user. This is crucial for Row Level Security (RLS).
+*   **Row Level Security (RLS):** Each table will have RLS enabled. You will need to define policies for each table later to control data access (e.g., users can only see their own data).
+*   **Naming:** Table names are pluralized versions of your model names (e.g., `Case` model becomes `Cases` table).
+
+I will now create a new file `c:/Users/dubli/Desktop/PROMEDIATION/supabase_schema.sql` with the SQL commands. You can then execute this SQL in the Supabase SQL Editor for your project.
+
+ I've reviewed your `models.ts` file and created a preliminary SQL schema based on the interfaces defined there. This schema includes tables for cases, contacts, case files (metadata), tasks, documents, notes, timeline events, meetings, saved forms, and checklist items.
+
+I've saved this schema as `supabase_schema.sql` in the root of your project.
+
+Here are some key considerations for this schema:
+
+*   **UUIDs:** Primary keys are UUIDs, generated by default.
+*   **Timestamps:** `created_at` and `updated_at` columns are included in most tables.
+*   **User Linking:** Most tables include a `user_id` column, which should be linked to `auth.users(id)` to associate records with the authenticated user. This is crucial for Row Level Security.
+*   **Relationships:** Foreign key constraints are set up to link related data (e.g., tasks to cases, notes to cases).
+*   **Case File Number:** The `cases` table has a `case_file_number` which is marked as `UNIQUE NOT NULL`.
+*   **File Storage:** The `case_file_metadata` table is designed to store metadata about files. The actual files should be stored in Supabase Storage, and the `storage_path` column in `case_file_metadata` would link to the file's location in the storage bucket.
+*   **JSONB:** Fields like `intake_form` in `cases` and `sections` in `saved_forms` use `JSONB` for flexible data storage.
+*   **Indexes:** Basic indexes are suggested for frequently queried columns.
+*   **Row Level Security (RLS):** RLS is enabled for all tables. You will need to define policies for each table to control data access. An example policy is commented at the end of the SQL file.
+
+**Next Steps:**
+
+1.  **Review the Schema:** Please open `supabase_schema.sql` and carefully review the table definitions. You might want to adjust column types, add or remove columns, or change relationships based on your specific needs.
+2.  **Apply to Supabase:** You can execute this SQL in the Supabase SQL Editor for your project to create the tables.
+3.  **Define RLS Policies:** This is a critical step. For each table, define appropriate RLS policies in the Supabase dashboard to ensure users can only access and modify data they are permitted to.
+4.  **Regenerate Supabase Types:** After creating the tables and RLS policies in Supabase, run the following command again to update your `supabase.ts` file with the new schema:
+    ```
+    npx supabase gen types typescript --project-id gcfidmuxvoapgwflhaea --schema public > c:/Users/dubli/Desktop/PROMEDIATION/src/types/supabase.ts
+    ```
+
+Once these steps are complete, we can proceed with refactoring your services to use Supabase.
+
+---
+
+_**User**_
+
+Can you generate the rls policies for each table and give them to me her in the chat window
+
+---
+
+_**Assistant**_
+
+Okay, I can help you generate a set of basic Row Level Security (RLS) policies for the tables defined in your `supabase_schema.sql`. These policies will generally allow users to manage (create, read, update, delete) records that are associated with their own `user_id`.
+
+Remember to **carefully review and test** these policies in your Supabase project dashboard to ensure they meet your exact security and data access requirements. You might need to create more granular policies (e.g., for read-only access under certain conditions, or for different user roles).
+
+Here's the SQL for the RLS policies:
+
+```sql
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'cases' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can perform all operations on their own cases.
+CREATE POLICY "Users can manage their own cases"
+ON public.cases
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'contacts' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can perform all operations on their own contacts.
+CREATE POLICY "Users can manage their own contacts"
+ON public.contacts
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'case_file_metadata' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage file metadata linked to their user_id.
+-- This assumes user_id on case_file_metadata is set to the case owner or file creator.
+CREATE POLICY "Users can manage their own case file metadata"
+ON public.case_file_metadata
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+-- (Ensure user_id is populated correctly on case_file_metadata or use this more complex check)
+CREATE POLICY "Users can manage file metadata for their cases"
+ON public.case_file_metadata
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = case_file_metadata.case_id AND c.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = case_file_metadata.case_id AND c.user_id = auth.uid()));
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'tasks' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage tasks linked to their user_id.
+CREATE POLICY "Users can manage their own tasks"
+ON public.tasks
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+CREATE POLICY "Users can manage tasks for their cases"
+ON public.tasks
+FOR ALL
+USING (
+    (auth.uid() = user_id) OR
+    (case_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.cases c WHERE c.id = tasks.case_id AND c.user_id = auth.uid()))
+)
+WITH CHECK (
+    (auth.uid() = user_id) OR
+    (case_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.cases c WHERE c.id = tasks.case_id AND c.user_id = auth.uid()))
+);
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'documents' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage documents linked to their user_id.
+CREATE POLICY "Users can manage their own documents"
+ON public.documents
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'notes' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage notes linked to their user_id.
+CREATE POLICY "Users can manage their own notes"
+ON public.notes
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+CREATE POLICY "Users can manage notes for their cases"
+ON public.notes
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = notes.case_id AND c.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = notes.case_id AND c.user_id = auth.uid()));
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'timeline_events' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage timeline events linked to their user_id.
+CREATE POLICY "Users can manage their own timeline events"
+ON public.timeline_events
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+CREATE POLICY "Users can manage timeline events for their cases"
+ON public.timeline_events
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = timeline_events.case_id AND c.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = timeline_events.case_id AND c.user_id = auth.uid()));
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'meetings' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage meetings linked to their user_id.
+CREATE POLICY "Users can manage their own meetings"
+ON public.meetings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+CREATE POLICY "Users can manage meetings for their cases"
+ON public.meetings
+FOR ALL
+USING (
+    (auth.uid() = user_id) OR
+    (case_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.cases c WHERE c.id = meetings.case_id AND c.user_id = auth.uid()))
+)
+WITH CHECK (
+    (auth.uid() = user_id) OR
+    (case_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.cases c WHERE c.id = meetings.case_id AND c.user_id = auth.uid()))
+);
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'saved_forms' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage saved forms linked to their user_id.
+CREATE POLICY "Users can manage their own saved forms"
+ON public.saved_forms
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'checklist_items' table
+-- -----------------------------------------------------------------------------
+-- Policy: Users can manage checklist items linked to their user_id.
+CREATE POLICY "Users can manage their own checklist items"
+ON public.checklist_items
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+/*
+-- Alternative/Additional Policy if access should be based on case ownership:
+CREATE POLICY "Users can manage checklist items for their cases"
+ON public.checklist_items
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = checklist_items.case_id AND c.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.cases c WHERE c.id = checklist_items.case_id AND c.user_id = auth.uid()));
+*/
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'app_counters' table
+-- -----------------------------------------------------------------------------
+-- Policy: Restrict access to app_counters.
+-- This table should typically be managed by backend logic or database functions with elevated privileges (service_role).
+-- This policy denies all access to authenticated users by default.
+CREATE POLICY "Deny all access to app_counters for regular users"
+ON public.app_counters
+FOR ALL
+USING (false)
+WITH CHECK (false);
+
+-- To allow service_role (e.g., for server-side operations or admin scripts) to access app_counters:
+-- CREATE POLICY "Allow service_role full access to app_counters"
+-- ON public.app_counters
+-- FOR ALL
+-- USING (auth.role() = 'service_role')
+-- WITH CHECK (auth.role() = 'service_role');
+-- Ensure you understand the implications of using service_role.
+```
+
+**Explanation and Important Considerations:**
+
+1.  **`auth.uid()`**: This Supabase function returns the UUID of the currently authenticated user.
+2.  **`USING (condition)`**: This clause applies to `SELECT`, `UPDATE`, and `DELETE`. Rows are only visible or modifiable if the condition is true.
+3.  **`WITH CHECK (condition)`**: This clause applies to `INSERT` and `UPDATE`. The operation is only allowed if the condition is true for the new or modified row.
+4.  **`FOR ALL`**: This shorthand creates policies for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` operations.
+5.  **`user_id` Column**: These policies assume that each table has a `user_id` column that correctly stores the UUID of the user who "owns" or is primarily associated with that record. When you insert data into these tables from your application, ensure you are populating this `user_id` field with `auth.uid()`.
+6.  **Case-Linked Tables**: For tables like `notes`, `tasks`, `case_file_metadata`, etc., which are linked to a `case_id`:
+    *   The simplest RLS is based on the `user_id` directly on these tables. This means when a note or task is created for a case, its `user_id` should be set to the `user_id` of the case owner (or the current user, if that's the desired logic).
+    *   I've commented out alternative policies that check ownership through the `cases` table (`EXISTS (SELECT 1 FROM public.cases c WHERE c.id = <child_table>.case_id AND c.user_id = auth.uid())`). These are more complex but can be useful if the `user_id` on the child table isn't the sole determinant of access. Choose the approach that best fits your data integrity model.
+7.  **`app_counters` Table**: This table is special. It's not typically user-specific in the same way. The provided policy denies all direct access to regular authenticated users. You would usually interact with this table via database functions (`SECURITY DEFINER` functions) or using the `service_role` key from a trusted backend environment if you need to modify these counters.
+8.  **Testing**: After applying these policies in the Supabase dashboard (under Authentication > Policies), thoroughly test your application with different user accounts to verify that data access is restricted as expected.
+9.  **Default Denial**: If RLS is enabled on a table and no policies match (or all matching policies evaluate to false for a given operation), the operation is denied. This is a secure default.
+10. **Multiple Policies**: You can have multiple policies on a single table. For `SELECT`, if any policy's `USING` clause is true, access is granted. For `INSERT`, `UPDATE`, `DELETE`, all relevant policies' `WITH CHECK` (for `INSERT`/`UPDATE`) or `USING` (for `DELETE`) clauses must be true.
+
+You can copy and paste this SQL into the Supabase SQL Editor for your project. Remember to enable RLS for each table first (which is already part of your `supabase_schema.sql` script).
+
+---
+
+_**User**_
+
+Ok we will need supabase tables for all the settings tabs Profile
+Branding
+Billing
+Notifications
+Subscriptions
+Integrations
+
+---
+
+_**Assistant**_
+
+Okay, I'll define the schemas for these settings tables and then generate the corresponding Row Level Security (RLS) policies.
+
+Here is the SQL to create the new tables. I will add this to your `supabase_schema.sql` file.
+
+```sql
+-- -----------------------------------------------------------------------------
+-- User Profile Settings Table
+-- Stores user-specific profile information.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.user_profile_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    avatar_url TEXT, -- URL to avatar image in Supabase Storage
+    job_title TEXT,
+    phone_number TEXT,
+    timezone TEXT DEFAULT 'UTC',
+    date_format TEXT DEFAULT 'MM/DD/YYYY',
+    time_format TEXT DEFAULT '12h',
+    language TEXT DEFAULT 'en-US',
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.user_profile_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_user_profile_settings_user_id ON public.user_profile_settings(user_id);
+
+-- -----------------------------------------------------------------------------
+-- Branding Settings Table
+-- Stores user-specific branding preferences.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.branding_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    logo_url TEXT, -- URL to logo image in Supabase Storage
+    primary_color TEXT, -- e.g., '#RRGGBB'
+    secondary_color TEXT, -- e.g., '#RRGGBB'
+    font_family TEXT,
+    email_header_url TEXT, -- URL to email header image
+    email_footer_text TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.branding_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_branding_settings_user_id ON public.branding_settings(user_id);
+
+-- -----------------------------------------------------------------------------
+-- Billing Settings Table
+-- Stores user-specific billing information and preferences.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.billing_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    business_name TEXT,
+    business_address TEXT,
+    tax_id TEXT,
+    default_currency TEXT DEFAULT 'USD',
+    payment_terms TEXT, -- e.g., "Net 30"
+    invoice_footer_text TEXT,
+    stripe_customer_id TEXT, -- If using Stripe
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.billing_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_billing_settings_user_id ON public.billing_settings(user_id);
+CREATE INDEX idx_billing_settings_stripe_customer_id ON public.billing_settings(stripe_customer_id);
+
+-- -----------------------------------------------------------------------------
+-- Notification Settings Table
+-- Stores user preferences for various notifications.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.notification_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email_new_case BOOLEAN DEFAULT TRUE,
+    email_task_assigned BOOLEAN DEFAULT TRUE,
+    email_meeting_scheduled BOOLEAN DEFAULT TRUE,
+    email_document_uploaded BOOLEAN DEFAULT TRUE,
+    email_invoice_paid BOOLEAN DEFAULT TRUE,
+    email_mention BOOLEAN DEFAULT TRUE,
+    email_direct_message BOOLEAN DEFAULT TRUE,
+    in_app_new_message BOOLEAN DEFAULT TRUE,
+    in_app_mention BOOLEAN DEFAULT TRUE,
+    push_notifications_enabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_notification_settings_user_id ON public.notification_settings(user_id);
+
+-- -----------------------------------------------------------------------------
+-- App Subscriptions Table
+-- Stores user subscription status for the application.
+-- Actual subscription management might be handled by a payment provider via webhooks.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.app_subscriptions (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    plan_id TEXT, -- e.g., 'free', 'basic_monthly', 'premium_annual'
+    status TEXT NOT NULL, -- e.g., 'trialing', 'active', 'past_due', 'canceled', 'incomplete'
+    stripe_subscription_id TEXT UNIQUE, -- If using Stripe
+    current_period_start TIMESTAMPTZ,
+    current_period_end TIMESTAMPTZ,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+    canceled_at TIMESTAMPTZ,
+    trial_start TIMESTAMPTZ,
+    trial_end TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.app_subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_app_subscriptions_user_id ON public.app_subscriptions(user_id);
+CREATE INDEX idx_app_subscriptions_status ON public.app_subscriptions(status);
+CREATE INDEX idx_app_subscriptions_stripe_id ON public.app_subscriptions(stripe_subscription_id);
+
+-- -----------------------------------------------------------------------------
+-- Integration Settings Table
+-- Stores settings and tokens for third-party integrations.
+-- IMPORTANT: Sensitive tokens (access_token, refresh_token) should ideally be
+-- encrypted at rest using Supabase Vault or similar mechanisms.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.integration_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    integration_name TEXT NOT NULL, -- e.g., 'calendly', 'google_calendar', 'zoom', 'stripe_connect'
+    is_connected BOOLEAN DEFAULT FALSE,
+    access_token TEXT, -- Store encrypted via Supabase Vault
+    refresh_token TEXT, -- Store encrypted via Supabase Vault
+    token_expires_at TIMESTAMPTZ,
+    scopes TEXT[], -- e.g., ['calendar.read', 'calendar.write']
+    external_user_id TEXT, -- User ID on the external platform
+    metadata JSONB, -- For any other integration-specific settings
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT unique_user_integration UNIQUE (user_id, integration_name)
+);
+ALTER TABLE public.integration_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_integration_settings_user_id ON public.integration_settings(user_id);
+CREATE INDEX idx_integration_settings_name ON public.integration_settings(integration_name);
+CREATE INDEX idx_integration_settings_user_integration ON public.integration_settings(user_id, integration_name);
+
+```
+
+And here are the corresponding RLS policies. I will also add these to your `supabase_schema.sql` file, following the table definitions.
+
+```sql
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'user_profile_settings' table
+-- -----------------------------------------------------------------------------
+CREATE POLICY "Users can manage their own profile settings"
+ON public.user_profile_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'branding_settings' table
+-- -----------------------------------------------------------------------------
+CREATE POLICY "Users can manage their own branding settings"
+ON public.branding_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'billing_settings' table
+-- -----------------------------------------------------------------------------
+CREATE POLICY "Users can manage their own billing settings"
+ON public.billing_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'notification_settings' table
+-- -----------------------------------------------------------------------------
+CREATE POLICY "Users can manage their own notification settings"
+ON public.notification_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'app_subscriptions' table
+-- -----------------------------------------------------------------------------
+-- Users can view their own subscription.
+CREATE POLICY "Users can view their own subscription"
+ON public.app_subscriptions
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Subscription creation/updates are typically handled by backend logic (e.g., Stripe webhooks using service_role).
+-- Allowing users to directly modify all fields can be risky.
+-- If you need users to cancel, it's often done via a specific function or by setting a field like 'cancel_at_period_end'.
+CREATE POLICY "Allow service_role full access to app_subscriptions"
+ON public.app_subscriptions
+FOR ALL
+USING (auth.role() = 'service_role')
+WITH CHECK (auth.role() = 'service_role');
+-- If you want to allow users to update specific fields (e.g. cancel_at_period_end), add a more granular UPDATE policy.
+-- Example: Allow users to update cancel_at_period_end for their own subscription
+-- CREATE POLICY "Users can update cancel_at_period_end for their subscription"
+-- ON public.app_subscriptions
+-- FOR UPDATE
+-- USING (auth.uid() = user_id)
+-- WITH CHECK (auth.uid() = user_id);
+
+
+-- -----------------------------------------------------------------------------
+-- RLS Policies for 'integration_settings' table
+-- -----------------------------------------------------------------------------
+CREATE POLICY "Users can manage their own integration settings"
+ON public.integration_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+```
+
+I will now update the `supabase_schema.sql` file.
+ 
+````
+
+````
+I've updated the `supabase_schema.sql` file to include tables and basic RLS policies for the settings sections you listed:
+
+1.  **`user_profiles`**: For Profile settings.
+    *   Stores full name, avatar URL, job title, phone, address, bio, website.
+    *   RLS: Users can manage their own profile.
+
+2.  **`branding_settings`**: For Branding settings.
+    *   Stores logo URL, primary/secondary colors, font, theme preference, custom CSS.
+    *   RLS: Users can manage their own branding settings.
+
+3.  **`billing_settings`**: For Billing settings.
+    *   Stores business name, tax ID, billing address, payment method details (non-sensitive), default currency, invoice footer.
+    *   RLS: Users can manage their own billing settings.
+
+4.  **`notification_settings`**: For Notifications settings.
+    *   Stores preferences for email, in-app, and SMS notifications using JSONB for flexibility.
+    *   RLS: Users can manage their own notification settings.
+
+5.  **`subscriptions`**: For Subscriptions management.
+    *   Stores Stripe customer/subscription IDs, plan details, status, and relevant dates.
+    *   RLS: Users can view their own subscription. Management (updates/creation/cancellation) is typically handled by secure webhooks (using `service_role`) or admin actions, so the policy allows full access for `service_role`.
+
+6.  **`integrations`**: For Integrations settings.
+    *   Stores details about enabled third-party integrations like Calendly, Google Calendar, etc. Includes `auth_details` (consider Supabase Vault for sensitive tokens) and other settings.
+    *   RLS: Users can manage their own integrations.
+
+**Important Notes for these new tables:**
+
+*   **`user_id` as Foreign Key**: All these tables use `user_id` as a primary key that also references `auth.users(id) ON DELETE CASCADE`. This means if a user is deleted from `auth.users`, their corresponding settings records will also be deleted.
+*   **JSONB for Flexibility**: Fields like `address`, `payment_method_details`, `email_notifications`, and `auth_details` use `JSONB` to store structured yet flexible data.
+*   **RLS Policies**: The RLS policies are generally set up so that users can manage their own settings. For `subscriptions`, users can only read their own, while `service_role` (e.g., for backend processes like Stripe webhooks) has full control.
+*   **Security for Sensitive Data**: For fields like `auth_details` in the `integrations` table, if they store sensitive tokens or API keys, ensure they are encrypted at rest or use Supabase Vault for secure storage and access. The provided schema doesn't enforce encryption itself.
+*   **Default Values**: Some sensible default values are provided (e.g., for `notification_settings`).
+
+Please review these additions in `supabase_schema.sql`. You'll need to apply these changes to your Supabase project using the SQL Editor. After that, remember to regenerate your Supabase types:
+
+```powershell
+npx supabase gen types typescript --project-id gcfidmuxvoapgwflhaea --schema public > c:/Users/dubli/Desktop/PROMEDIATION/src/types/supabase.ts
+```
+
+Let me know when you're ready to move on to the next step!
+
+---
+
+_**User**_
+
+We will also need tables for billing. Both invoices and record payment and summaries. 
+
+---
+
+_**Assistant**_
+
+Okay, I will define the schemas and RLS policies for `invoices`, `invoice_items`, `payments`, and `billing_summaries` and add them to your `supabase_schema.sql` file.
+
+ Okay, I will add tables for `invoices`, `invoice_items`, `payments`, and a placeholder `billing_summaries` table to your `supabase_schema.sql` file. These tables will include relevant columns, relationships, and basic Row Level Security policies.
+
+First, I need to read the current content of `supabase_schema.sql` to ensure the new SQL is appended correctly. Okay, I have reviewed the conversation summary and the content of `supabase_schema.sql`.
+
+The schema includes tables for core functionalities like cases, contacts, documents, tasks, and settings, as well as detailed billing. Basic RLS policies have been implemented, generally allowing users to manage their own data, with specific policies for subscriptions and app_counters.
+
+The pending steps are:
+1.  **Review and Apply Schema:** You will need to carefully review the `supabase_schema.sql` file for any final adjustments and then apply it to your Supabase project.
+2.  **Define/Refine RLS Policies:** Further review and testing of RLS policies in the Supabase dashboard is crucial to ensure they meet your security needs.
+3.  **Regenerate Supabase Types:** After the schema is finalized in Supabase, regenerate the TypeScript types.
+4.  **Integrate Supabase into Services:** Refactor your application's services to use the Supabase client.
+5.  **Update UI Components:** Modify UI components to work with the new Supabase-backed services.
+
+Let me know when you're ready to proceed with any of these steps, or if you have specific questions or modifications in mind for the schema or RLS policies before applying them.
+
+---
+
+_**User**_
+
+Can you give me the table here for billing etc
+
+---
+
+_**Assistant**_
+
+Okay, here are the SQL table definitions for billing and related settings from your `supabase_schema.sql` file:
+
+**Billing Specific Tables:**
+
+```sql
+-- -----------------------------------------------------------------------------
+-- Invoices Table
+-- Stores invoice information.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    case_id UUID REFERENCES public.cases(id) ON DELETE SET NULL,
+    contact_id UUID REFERENCES public.contacts(id) ON DELETE SET NULL, -- Client to be invoiced
+    invoice_number TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft', -- e.g., 'draft', 'sent', 'paid', 'overdue', 'void'
+    issue_date DATE NOT NULL,
+    due_date DATE,
+    subtotal DECIMAL(10, 2) NOT NULL,
+    tax_rate DECIMAL(5, 2) DEFAULT 0.00,
+    tax_amount DECIMAL(10, 2) GENERATED ALWAYS AS (subtotal * tax_rate) STORED,
+    total_amount DECIMAL(10, 2) GENERATED ALWAYS AS (subtotal + (subtotal * tax_rate)) STORED,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_invoices_user_id ON public.invoices(user_id);
+CREATE INDEX idx_invoices_case_id ON public.invoices(case_id);
+CREATE INDEX idx_invoices_contact_id ON public.invoices(contact_id);
+CREATE INDEX idx_invoices_status ON public.invoices(status);
+CREATE INDEX idx_invoices_issue_date ON public.invoices(issue_date);
+CREATE INDEX idx_invoices_due_date ON public.invoices(due_date);
+
+-- RLS: Users can manage their own invoices.
+CREATE POLICY "Users can manage their own invoices"
+ON public.invoices
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- InvoiceItems Table
+-- Stores individual line items for an invoice.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.invoice_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, -- For RLS consistency
+    description TEXT NOT NULL,
+    quantity DECIMAL(10, 2) NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    amount DECIMAL(10, 2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_invoice_items_invoice_id ON public.invoice_items(invoice_id);
+CREATE INDEX idx_invoice_items_user_id ON public.invoice_items(user_id);
+
+-- RLS: Users can manage invoice items linked to their invoices.
+CREATE POLICY "Users can manage their own invoice items"
+ON public.invoice_items
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.invoices WHERE invoices.id = invoice_items.invoice_id AND invoices.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.invoices WHERE invoices.id = invoice_items.invoice_id AND invoices.user_id = auth.uid()));
+
+-- -----------------------------------------------------------------------------
+-- Payments Table
+-- Stores payment information related to invoices.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    payment_date TIMESTAMPTZ NOT NULL DEFAULT now(),
+    amount_paid DECIMAL(10, 2) NOT NULL,
+    payment_method TEXT, -- e.g., 'Credit Card', 'Bank Transfer', 'Stripe Transaction ID'
+    transaction_id TEXT, -- Optional: For external payment gateway reference
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_payments_user_id ON public.payments(user_id);
+CREATE INDEX idx_payments_invoice_id ON public.payments(invoice_id);
+CREATE INDEX idx_payments_payment_date ON public.payments(payment_date);
+
+-- RLS: Users can manage payments linked to their invoices.
+CREATE POLICY "Users can manage payments for their invoices"
+ON public.payments
+FOR ALL
+USING (EXISTS (SELECT 1 FROM public.invoices WHERE invoices.id = payments.invoice_id AND invoices.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM public.invoices WHERE invoices.id = payments.invoice_id AND invoices.user_id = auth.uid()));
+
+-- -----------------------------------------------------------------------------
+-- BillingSummaries Table (Placeholder - might be a VIEW or derived data)
+-- Could store aggregated billing data per user/case for quick reporting.
+-- For now, a simple table structure. Consider using a materialized view later.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.billing_summaries (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    total_billed DECIMAL(12, 2) DEFAULT 0.00,
+    total_paid DECIMAL(12, 2) DEFAULT 0.00,
+    total_outstanding DECIMAL(12, 2) GENERATED ALWAYS AS (total_billed - total_paid) STORED,
+    last_invoice_date DATE,
+    last_payment_date DATE,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.billing_summaries ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_billing_summaries_user_id ON public.billing_summaries(user_id);
+
+-- RLS: Users can view their own billing summary. Updates might be handled by triggers or functions.
+CREATE POLICY "Users can view their own billing summary"
+ON public.billing_summaries
+FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage billing summaries" -- Or specific functions
+ON public.billing_summaries
+FOR ALL
+USING (auth.role() = 'service_role')
+WITH CHECK (auth.role() = 'service_role');
+```
+
+**Related Settings Tables (already in your schema but relevant to billing):**
+
+```sql
+-- -----------------------------------------------------------------------------
+-- BillingSettings Table
+-- Stores billing-related settings for a user.
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.billing_settings (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    business_name TEXT,
+    tax_id TEXT,
+    billing_address JSONB, -- { street: '', city: '', state: '', postal_code: '', country: '' }
+    payment_method_details JSONB, -- Store non-sensitive details, e.g., card type, last4. Actual payment processing via Stripe/etc.
+    default_currency TEXT DEFAULT 'USD',
+    invoice_footer_text TEXT,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.billing_settings ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_billing_settings_user_id ON public.billing_settings(user_id);
+
+-- RLS: Users can manage their own billing settings.
+CREATE POLICY "Users can manage their own billing settings"
+ON public.billing_settings
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- -----------------------------------------------------------------------------
+-- Subscriptions Table
+-- Stores user subscription status (e.g., to a plan via Stripe).
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.subscriptions (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    stripe_customer_id TEXT UNIQUE, -- Stripe customer ID
+    stripe_subscription_id TEXT UNIQUE, -- Stripe subscription ID
+    plan_id TEXT, -- Your internal plan identifier (e.g., 'free', 'pro', 'enterprise')
+    status TEXT, -- e.g., 'active', 'canceled', 'past_due', 'trialing'
+    current_period_start TIMESTAMPTZ,
+    current_period_end TIMESTAMPTZ,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
+    canceled_at TIMESTAMPTZ,
+    trial_start TIMESTAMPTZ,
+    trial_end TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_subscriptions_user_id ON public.subscriptions(user_id);
+CREATE INDEX idx_subscriptions_stripe_customer_id ON public.subscriptions(stripe_customer_id);
+CREATE INDEX idx_subscriptions_stripe_subscription_id ON public.subscriptions(stripe_subscription_id);
+
+-- RLS: Users can view their own subscription. Management (updates/cancels) often handled by webhooks or admin.
+CREATE POLICY "Users can view their own subscription"
+ON public.subscriptions
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Allow service role to manage subscriptions (e.g., via webhooks from Stripe)
+CREATE POLICY "Service role can manage subscriptions"
+ON public.subscriptions
+FOR ALL
+USING (auth.role() = 'service_role')
+WITH CHECK (auth.role() = 'service_role');
+```
+These are the tables from your `supabase_schema.sql` file that are directly related to billing functionalities. Remember to review and apply these to your Supabase project when you are ready.
 
 ---
 

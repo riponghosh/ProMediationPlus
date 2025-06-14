@@ -6,7 +6,8 @@ import {
   Clock, 
   FileCheck, 
   CheckSquare, 
-  ChevronRight 
+  ChevronRight,
+  StickyNote
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -135,31 +136,32 @@ const CaseFileSummaryPage = () => {
             </CardFooter>
           </Card>
 
-          {/* Forms Card */}
+          {/* Notes Card Start */}
           <Card className="transition-all hover:shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-amber-500" />
-                Forms
+                <StickyNote className="h-5 w-5 mr-2 text-yellow-500" />
+                Notes
               </CardTitle>
               <CardDescription>
-                Case-related forms and documents
+                Case-related notes and observations
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground line-clamp-2">
-                Access intake forms, agreements to mediate, and other important documentation.
+                Access and manage all notes, logs, and important observations for this case.
               </p>
             </CardContent>
             <CardFooter>
               <Button asChild variant="outline" className="w-full">
-                <Link to={`/case-files/${caseId}/forms`}>
-                  View Forms
+                <Link to={`/case-files/${caseId}/notes`}>
+                  View Notes
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
             </CardFooter>
           </Card>
+          {/* Notes Card End */}
 
           {/* Timeline Card */}
           <Card className="transition-all hover:shadow-md">
