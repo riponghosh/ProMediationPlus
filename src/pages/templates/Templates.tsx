@@ -2,7 +2,7 @@ import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { FileOutput, Search, Plus, Clock, Filter, Download, FileText, Files, BookText, FolderClosed, Clipboard, ClipboardList, FileSignature } from "lucide-react";
+import { FileOutput, Search, Plus, Clock, Filter, Download, FileText, Files, BookText, FolderClosed, Clipboard, ClipboardList, FileSignature, Briefcase, Users } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,44 +15,91 @@ const allTemplates = [
 	{
 		id: 1,
 		title: "Mediation Agreement",
-		category: "agreement",
+		category: "mediation", // Updated category
 		lastUsed: "2023-06-10T15:30:00",
 		description: "Standard agreement outlining mediation process, confidentiality terms, and mediator role.",
+		path: "/mediation-template", // Added path for consistency
 	},
 	{
 		id: 7,
 		title: "Statement of Means",
-		category: "worksheet",
+		category: "worksheet", // Stays as worksheet, will get default color
 		lastUsed: "2023-06-15T16:45:00",
 		description: "Financial disclosure form documenting income, expenses, assets, and liabilities of parties.",
+		path: "/template-builder", // Changed to generic template builder
 	},
 	{
 		id: 8,
 		title: "Parenting Agreement",
-		category: "agreement",
+		category: "mediation", // Updated category
 		lastUsed: "2023-06-20T14:30:00",
 		description: "Comprehensive agreement establishing co-parenting arrangements, schedules, and responsibilities for children's welfare.",
+		path: "/parenting-template", // Added path
 	},
 	{
 		id: 9,
 		title: "Agreement To Mediate",
-		category: "agreement",
-		lastUsed: "2025-06-01T10:00:00", // Example date
+		category: "mediation", // Updated category
+		lastUsed: "2025-06-01T10:00:00",
 		description: "Formal agreement signed by parties prior to commencing mediation, outlining the terms and conditions of the mediation process.",
+		path: "/mediation-template", // Changed to match existing route
 	},
 	{
 		id: 10,
 		title: "Child Maintenance Agreement Template",
-		category: "agreement",
-		lastUsed: "2025-05-28T11:30:00", // Example date
+		category: "mediation", // Updated category
+		lastUsed: "2025-05-28T11:30:00",
 		description: "Template for detailing child maintenance payments, schedules, and related terms agreed upon by parents.",
+		path: "/template-builder", // Changed to generic template builder
 	},
 	{
 		id: 11,
 		title: "Cohabiting Agreement Template",
-		category: "agreement",
-		lastUsed: "2025-05-25T14:15:00", // Example date
+		category: "mediation", // Updated category
+		lastUsed: "2025-05-25T14:15:00",
 		description: "Agreement template for unmarried couples living together, outlining property rights, financial responsibilities, and other arrangements.",
+		path: "/template-builder", // Changed to generic template builder
+	},
+	{
+		id: 12,
+		title: "Client Intake Form",
+		category: "intake", // Stays intake
+		lastUsed: "2024-07-20T10:00:00",
+		description: "Form to collect initial information from a new client.",
+		path: "/client-intake-form", // Path was already specific
+	},
+	// Adding other templates that were previously hardcoded with specific colors
+	{
+		id: 13, // New ID
+		title: "Separation Agreement",
+		category: "mediation", // Updated category
+		lastUsed: "2025-06-05T10:00:00", // Example date
+		description: "Legal agreement template outlining terms for separated couples including property division, support, and other obligations.",
+		path: "/separation-template",
+	},
+	{
+		id: 14, // New ID
+		title: "Commercial Mediation Agreement",
+		category: "commercial", // Updated category
+		lastUsed: "2025-06-03T11:00:00", // Example date
+		description: "Template for commercial disputes, outlining mediation terms, confidentiality, and party acknowledgements.",
+		path: "/commercial-agreement-template",
+	},
+	{
+		id: 15, // New ID
+		title: "Organisational & Workplace Agreement",
+		category: "workplace", // Updated category
+		lastUsed: "2025-06-02T14:00:00", // Example date
+		description: "Agreement for resolving workplace and organisational disputes, covering terms, confidentiality, and resolutions.",
+		path: "/workplace-agreement-template",
+	},
+	{
+		id: 16, // New ID
+		title: "Client Enquiry Form",
+		category: "intake", // Stays intake
+		lastUsed: "2025-06-01T16:00:00", // Example date
+		description: "Form for capturing initial client enquiry details and contact information.",
+		path: "/client-enquiry-form",
 	},
 ];
 
@@ -63,46 +110,79 @@ const TemplatesPage = () => {
 	const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
 	const navigate = useNavigate();
 
-	// Helper for icon size - matching Settings.tsx
 	const iconSizeClass = isMobile ? "h-3.5 w-3.5" : "h-4 w-4";
 
-	// Format date in a readable way
 	const formatDate = (dateString: string) => {
 		const date = new Date(dateString);
 		const now = new Date();
 		const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-		if (diffInDays === 0) {
-			return "Today";
-		} else if (diffInDays === 1) {
-			return "Yesterday";
-		} else if (diffInDays < 30) {
-			return `${diffInDays} days ago`;
-		} else {
-			return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-		}
+		if (diffInDays === 0) return "Today";
+		if (diffInDays === 1) return "Yesterday";
+		if (diffInDays < 30) return `${diffInDays} days ago`;
+		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	};
 
-	// Filter templates based on search term and category
-	const filteredTemplates = allTemplates.filter(template => {
-		const matchesSearch = searchTerm === "" ||
-			template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			template.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-		const matchesCategory = activeTab === "all" || template.category === activeTab;
-
-		return matchesSearch && matchesCategory;
-	});
+	const getTemplatesForTab = (currentTabValue: string, currentSearchTerm: string) => {
+		return allTemplates.filter(template => {
+			const matchesSearch = currentSearchTerm === "" ||
+				template.title.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+				template.description.toLowerCase().includes(currentSearchTerm.toLowerCase());
+			const matchesCategory = currentTabValue === "all" || template.category === currentTabValue;
+			return matchesSearch && matchesCategory;
+		});
+	};
 
 	// Get tab title based on active tab
 	const getTabTitle = () => {
 		switch(activeTab) {
-			case "agreement": return "Agreement Templates";
+			case "mediation": return "Mediation Templates"; // Updated
 			case "intake": return "Intake Form Templates";
-			case "confidentiality": return "Confidentiality Documents";
-			case "process": return "Process Templates";
-			case "worksheet": return "Worksheet Templates";
+			case "commercial": return "Commercial Templates"; // Updated
+			case "workplace": return "Workplace Templates"; // Updated
+			// Removed confidentiality, process, worksheet from specific titles
 			default: return "All Templates";
+		}
+	};
+
+	// Helper function to get card styling based on category
+	const getCardStyling = (category: string) => {
+		switch (category) {
+			case "mediation":
+				return {
+					card: "border-green-200 bg-green-50/30",
+					header: "bg-green-50",
+					iconText: "text-green-600",
+					iconClass: FileSignature, // Default icon for mediation
+				};
+			case "intake":
+				return {
+					card: "border-pink-200 bg-pink-50/30",
+					header: "bg-pink-50",
+					iconText: "text-pink-600",
+					iconClass: ClipboardList,
+				};
+			case "commercial":
+				return {
+					card: "border-slate-300 bg-slate-100/50",
+					header: "bg-slate-100",
+					iconText: "text-slate-600",
+					iconClass: FileSignature, // Can be more specific if needed
+				};
+			case "workplace":
+				return {
+					card: "border-cyan-200 bg-cyan-50/30",
+					header: "bg-cyan-50",
+					iconText: "text-cyan-600",
+					iconClass: FileSignature, // Can be more specific if needed
+				};
+			default: // For "worksheet" or any other category
+				return {
+					card: "border-gray-200 bg-gray-50/30", // Default neutral color
+					header: "bg-gray-50",
+					iconText: "text-gray-600",
+					iconClass: FolderClosed, // Default icon
+				};
 		}
 	};
 
@@ -142,9 +222,8 @@ const TemplatesPage = () => {
 				<Card className="flex flex-col overflow-hidden">
 					<CardHeader className={`${isMobile ? "px-2 py-2" : "pb-0"} overflow-hidden`}>
 						<Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full overflow-hidden">
-							{/* Updated TabsList to match Settings.tsx styling */}
 							<TabsList className={`
-								grid ${isMobile ? "grid-cols-3 md:grid-cols-6" : "grid-cols-6"}
+								grid ${isMobile ? "grid-cols-3" : "grid-cols-5"} // Adjusted for 5 tabs
 								w-full
 								h-auto p-1
 								bg-muted rounded-lg
@@ -164,7 +243,7 @@ const TemplatesPage = () => {
 									All
 								</TabsTrigger>
 								<TabsTrigger 
-									value="agreement" 
+									value="mediation" // Updated value
 									className={`
 										flex items-center justify-center gap-1.5
 										${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
@@ -172,8 +251,8 @@ const TemplatesPage = () => {
 										data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
 									`}
 								>
-									<FileText className={iconSizeClass} />
-									Agreements
+									<FileText className={iconSizeClass} /> {/* Icon for Mediation */}
+									Mediation
 								</TabsTrigger>
 								<TabsTrigger 
 									value="intake" 
@@ -188,7 +267,7 @@ const TemplatesPage = () => {
 									Intake
 								</TabsTrigger>
 								<TabsTrigger 
-									value="confidentiality" 
+									value="commercial" // New Tab
 									className={`
 										flex items-center justify-center gap-1.5
 										${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
@@ -196,11 +275,11 @@ const TemplatesPage = () => {
 										data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
 									`}
 								>
-									<BookText className={iconSizeClass} />
-									{isMobile ? "Confid." : "Confidential"}
+									<Briefcase className={iconSizeClass} /> {/* Icon for Commercial */}
+									Commercial
 								</TabsTrigger>
 								<TabsTrigger 
-									value="process" 
+									value="workplace" // New Tab
 									className={`
 										flex items-center justify-center gap-1.5
 										${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
@@ -208,21 +287,10 @@ const TemplatesPage = () => {
 										data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
 									`}
 								>
-									<Clipboard className={iconSizeClass} />
-									Process
+									<Users className={iconSizeClass} /> {/* Icon for Workplace */}
+									Workplace
 								</TabsTrigger>
-								<TabsTrigger 
-									value="worksheet" 
-									className={`
-										flex items-center justify-center gap-1.5
-										${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
-										rounded-md
-										data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
-									`}
-								>
-									<FolderClosed className={iconSizeClass} />
-									{isMobile ? "Sheets" : "Worksheets"}
-								</TabsTrigger>
+								{/* Removed Confidentiality, Process, Worksheet specific tabs */}
 							</TabsList>
 
 							{/* Title and Search Bar */}
@@ -240,179 +308,40 @@ const TemplatesPage = () => {
 							</div>
 
 							{/* Tabs Content (Looping through values) */}
-							{["all", "agreement", "intake", "confidentiality", "process", "worksheet"].map(tabValue => (
-								<TabsContent key={tabValue} value={tabValue} className="m-0 pt-0">
-									{/* Show the three agreement cards for all tabs or just agreement category */}
-									{(tabValue === "all" || tabValue === "agreement") ? (
+							{["all", "mediation", "intake", "commercial", "workplace"].map(tabValue => { // Updated tab values
+								const templatesForThisTab = getTemplatesForTab(tabValue, searchTerm);
+								return (
+									<TabsContent key={tabValue} value={tabValue} className="m-0 pt-0">
 										<CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-0 sm:p-4">
-											{/* Mediation Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-amber-200 bg-amber-50/30" onClick={() => navigate('/mediation-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-amber-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-amber-600 h-4 w-4" />
-															Mediation Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Standard agreement template for mediation process, confidentiality terms, and mediator role.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Parenting Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-green-200 bg-green-50/30" onClick={() => navigate('/parenting-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-green-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-green-600 h-4 w-4" />
-															Parenting Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Comprehensive template for creating parenting plans and custody arrangements for separating parents.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Separation Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-purple-200 bg-purple-50/30" onClick={() => navigate('/separation-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-purple-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-purple-600 h-4 w-4" />
-															Separation Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Legal agreement template outlining terms for separated couples including property division, support, and other obligations.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Agreement To Mediate Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-blue-200 bg-blue-50/30" onClick={() => navigate('/mediation-agreement-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-blue-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-blue-600 h-4 w-4" />
-															Agreement To Mediate
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Formal agreement template for mediation process, outlining terms and conditions agreed by parties.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Child Maintenance Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-teal-200 bg-teal-50/30" onClick={() => navigate('/child-maintenance-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-teal-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-teal-600 h-4 w-4" />
-															Child Maintenance Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Template for detailing child maintenance payments, schedules, and related terms agreed upon by parents.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Cohabiting Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-orange-200 bg-orange-50/30" onClick={() => navigate('/cohabiting-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-orange-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-orange-600 h-4 w-4" />
-															Cohabiting Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Agreement template for unmarried couples living together, outlining property rights, financial responsibilities, and other arrangements.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Commercial Mediation Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-slate-300 bg-slate-100/50" onClick={() => navigate('/commercial-agreement-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-slate-100`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-slate-600 h-4 w-4" />
-															Commercial Mediation Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Template for commercial disputes, outlining mediation terms, confidentiality, and party acknowledgements.
-													</p>
-												</CardContent>
-											</Card>
-
-											{/* Organisational & Workplace Agreement Card */}
-											<Card className="overflow-hidden hover:border-primary/50 transition-colors border-cyan-200 bg-cyan-50/30" onClick={() => navigate('/workplace-agreement-template')}>
-												<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-cyan-50`}>
-													<div className="flex items-start justify-between">
-														<CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
-															<FileSignature className="mr-2 text-cyan-600 h-4 w-4" />
-															Organisational & Workplace Agreement
-														</CardTitle>
-													</div>
-												</CardHeader>
-												<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-													<p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2 mb-4`}>
-														Agreement for resolving workplace and organisational disputes, covering terms, confidentiality, and resolutions.
-													</p>
-												</CardContent>
-											</Card>
-										</CardContent>
-									) : (
-										// Show original filtered templates for other tabs
-										<CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-0 sm:p-4">
-											{filteredTemplates.length > 0 ? (
-												filteredTemplates
-													.filter(template => tabValue === "all" || template.category === tabValue) // Additional filter by tab
-													.map((template) => (
-														<Card key={template.id} className="overflow-hidden hover:border-primary/50 transition-colors" onClick={() => {
-															// Simply navigate to a generic template view instead of opening specific modals
-															navigate(`/templates/${template.id}`);
-														}}>
-															<CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-muted/50`}>
+											{/* Render filtered templates */}
+											
+											{/* Render filtered templates */}
+											{templatesForThisTab.length > 0 ? (
+												templatesForThisTab.map((template) => {
+													const styling = getCardStyling(template.category);
+													const IconComponent = styling.iconClass;
+													return (
+														<Card 
+															key={template.id} 
+															className={`overflow-hidden hover:border-primary/50 transition-colors ${styling.card}`}
+															onClick={() => {
+																navigate(template.path || `/templates/${template.id}`);
+															}}
+														>
+															<CardHeader className={`${isMobile ? "p-3" : "p-4"} ${styling.header}`}>
 																<div className="flex items-start justify-between">
 																	<div className="flex items-center gap-2">
-																		<div className={`${isMobile ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary/10 flex items-center justify-center text-primary`}>
-																			{/* Icon logic */}
-																			{template.category === "agreement" ? <FileText className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
-																				template.category === "intake" ? <ClipboardList className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
-																				template.category === "confidentiality" ? <BookText className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
-																				template.category === "process" ? <Clipboard className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
-																					<FolderClosed className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />}
+																		<div className={`${isMobile ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-opacity-20 flex items-center justify-center ${styling.iconText.replace('text-', 'bg-').replace('-600', '-100')}`}>
+																			<IconComponent className={`${isMobile ? "h-4 w-4" : "h-5 w-5"} ${styling.iconText}`} />
 																		</div>
 																		<CardTitle className={`${isMobile ? "text-sm" : "text-base"}`}>{template.title}</CardTitle>
 																	</div>
 																</div>
 															</CardHeader>
 															<CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
-																{/* Description div with fixed height removed */}
 																<div className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2`}>
 																	{template.description}
 																</div>
-																{/* Bottom section of the card */}
 																<div className="flex items-center justify-between mt-4">
 																	<div className="flex items-center text-xs text-muted-foreground">
 																		<Clock className="mr-1 h-3 w-3" />
@@ -422,14 +351,13 @@ const TemplatesPage = () => {
 																		<Button size="sm" variant="ghost" className="h-8 w-8 p-0">
 																			<Download className="h-4 w-4" />
 																		</Button>
-																		{/* Add other actions like Edit/View if needed */}
 																	</div>
 																</div>
 															</CardContent>
 														</Card>
-													))
+													);
+												})
 											) : (
-												// No results display
 												<div className="col-span-full text-center py-10 text-muted-foreground">
 													<FileOutput className="mx-auto h-10 w-10 mb-2" />
 													<h3 className="font-medium">No templates found</h3>
@@ -439,25 +367,25 @@ const TemplatesPage = () => {
 												</div>
 											)}
 										</CardContent>
-									)}
-								</TabsContent>
-							))}
-						</Tabs>
-					</CardHeader>
-				</Card>
-			</div>
+									</TabsContent>
+									)
+								})}
+							</Tabs>
+						</CardHeader>
+					</Card>
+				</div>
 
-			{/* Dialog for New Template Builder */}
-			<Dialog open={templateBuilderOpen} onOpenChange={setTemplateBuilderOpen}>
-				<DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle>Create New Template</DialogTitle>
-					</DialogHeader>
-					<TemplateBuilder />
-				</DialogContent>
-			</Dialog>
-		</Layout>
-	);
-};
+				{/* Dialog for New Template Builder */}
+				<Dialog open={templateBuilderOpen} onOpenChange={setTemplateBuilderOpen}>
+					<DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
+						<DialogHeader>
+							<DialogTitle>Create New Template</DialogTitle>
+						</DialogHeader>
+						<TemplateBuilder />
+					</DialogContent>
+				</Dialog>
+			</Layout>
+		);
+	};
 
-export default TemplatesPage;
+	export default TemplatesPage;

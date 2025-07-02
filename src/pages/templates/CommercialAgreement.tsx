@@ -6,17 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Added Select
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Layout } from '@/components/layout/layout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-// import { getAllCaseFileNumbers } from '@/services/caseService'; // Assuming a service to get case file numbers
 
 // --- Zod Schema Definition ---
 const commercialAgreementSchema = z.object({
-  linkedCaseFileNumber: z.string().optional(), // Ensured this is present
+  linkedCaseFileNumber: z.string().optional(),
   agreementMadeDay: z.string().min(1, "Day is required."),
   agreementMadeMonth: z.string().min(1, "Month is required."),
   agreementMadeYear: z.string().min(1, "Year is required.").default(new Date().getFullYear().toString()),
@@ -83,7 +82,7 @@ const AgreementInputField: React.FC<AgreementInputFieldProps> = ({ control, name
             type={type}
             placeholder={placeholder}
             {...field}
-            value={field.value || ""} 
+            value={field.value || ""}
             className="bg-white"
           />
         </FormControl>
@@ -130,7 +129,7 @@ const AgreementTextField: React.FC<AgreementTextFieldProps> = ({ control, name, 
 
 const CommercialAgreementBuilder: React.FC = () => {
   const isMobile = useIsMobile();
-  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]); // Added state for case file numbers
+  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
   const form = useForm<CommercialAgreementData>({
     resolver: zodResolver(commercialAgreementSchema),
     defaultValues: {
@@ -158,17 +157,11 @@ const CommercialAgreementBuilder: React.FC = () => {
 
   const watchedFirstPartyName = form.watch("firstPartyName");
   const watchedSecondPartyName = form.watch("secondPartyName");
-  // Assuming mediator name might be part of mediatorNameAndAddress, adjust if it's separate
-  // const watchedMediatorName = form.watch("mediatorName"); 
 
-
-  useEffect(() => { // Added useEffect for fetching case file numbers (template)
+  useEffect(() => {
     const fetchCaseFiles = async () => {
       try {
-        // const numbers = await getAllCaseFileNumbers(); // Example, replace with actual service call
-        // setCaseFileNumbers(numbers);
-        // For now, using placeholder data:
-        setCaseFileNumbers(['CASE-001', 'CASE-002', 'CASE-003']); 
+        setCaseFileNumbers(['CASE-001', 'CASE-002', 'CASE-003']);
         console.log("Fetched case file numbers (placeholder)");
       } catch (error) {
         console.error("Failed to fetch case file numbers:", error);
@@ -189,14 +182,6 @@ const CommercialAgreementBuilder: React.FC = () => {
       form.setValue("secondPartySignatureName", watchedSecondPartyName, { shouldValidate: false });
     }
   }, [watchedSecondPartyName, form]);
-  
-  // Effect for mediator signature name if applicable
-  // React.useEffect(() => {
-  //   if (watchedMediatorName && !form.getValues("mediatorSignatureName")) {
-  //     form.setValue("mediatorSignatureName", watchedMediatorName, { shouldValidate: false });
-  //   }
-  // }, [watchedMediatorName, form]);
-
 
   function onSubmit(data: CommercialAgreementData) {
     console.log("Commercial Agreement Data:", JSON.stringify(data, null, 2));
@@ -222,9 +207,6 @@ const CommercialAgreementBuilder: React.FC = () => {
     if (downloadButton) downloadButton.style.display = 'none';
     if (saveButton) saveButton.style.display = 'none';
     
-    // Ensure all content is visible for html2canvas
-    // May need to temporarily expand any collapsed sections if applicable
-
     try {
       const canvas = await html2canvas(formElement, {
         scale: 2,
@@ -232,7 +214,6 @@ const CommercialAgreementBuilder: React.FC = () => {
         logging: false,
         windowWidth: formElement.scrollWidth,
         windowHeight: formElement.scrollHeight,
-        // Allow Taint can be problematic, useCORS is preferred
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -301,9 +282,9 @@ const CommercialAgreementBuilder: React.FC = () => {
       <div className={`container mx-auto px-4 py-8 ${isMobile ? "space-y-4" : "space-y-6"}`}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 bg-white p-6 md:p-10 rounded-lg shadow-xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-8">COMMERCIAL MEDIATION AGREEMENT</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-8">COMMERCIAL MEDIATION</h2>
             
-            <FormField // Added Link to Case File dropdown
+            <FormField
                 control={form.control}
                 name="linkedCaseFileNumber"
                 render={({ field }) => (
@@ -330,7 +311,7 @@ const CommercialAgreementBuilder: React.FC = () => {
                 )}
             />
 
-            <AgreementSection title="Agreement Details" className="bg-slate-50/50">
+            <AgreementSection title="Agreement to Mediate">
               <p className="text-center mb-6">
                 This AGREEMENT TO MEDIATE is made this
                 <FormField
@@ -365,17 +346,18 @@ const CommercialAgreementBuilder: React.FC = () => {
                     )}
                 />
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AgreementInputField control={form.control} name="firstPartyName" label="First Party Name" placeholder="Enter First Party\'s full name" />
-                <AgreementInputField control={form.control} name="secondPartyName" label="Second Party Name" placeholder="Enter Second Party\'s full name" />
-              </div>
-              <AgreementTextField control={form.control} name="mediatorNameAndAddress" label="Mediator Name & Address" placeholder="Enter Mediator\'s full name and address" rows={3}/>
+              <p>Between:</p>
+              <AgreementInputField control={form.control} name="firstPartyName" label="First Party" placeholder="Enter First Party's full name" />
+              <p>and</p>
+              <AgreementInputField control={form.control} name="secondPartyName" label="Second Party" placeholder="Enter Second Party's full name" />
+              <p>and</p>
+              <AgreementTextField control={form.control} name="mediatorNameAndAddress" label="Mediator Name & Address" placeholder="Enter Mediator's full name and address" rows={3}/>
+              <p>(The "Mediator").</p>
             </AgreementSection>
 
             <AgreementSection title="THE PARTIES AND THE MEDIATOR AGREE AS FOLLOWS;">
               <p>This Agreement to Mediate sets out the terms on which the Parties agree to mediate with the assistance of the Mediator who is being appointed by the Parties as Mediator, including the scope of the work to be undertaken and the basis upon which fees will be charged, in accordance with the provisions of the Mediation Act 2017, “the Act”.</p>
-              <p>The Parties acknowledge and accept that the appointment of the Mediator comes into effect upon the execution of this Agreement by the Parties and by the Mediator, and agree with the assistance of the Mediator, to try to settle the issue/s in dispute by mediation as per the provisions of this Agreement and unconditionally agree to its terms.</p>
-              <p>The Parties hereby undertake to participate in a forthright, bona fide manner at all times during mediation and to make genuine efforts to negotiate a reasonable resolution of the issue/s in dispute. Furthermore, the Parties agree to negotiate in good faith, to include;</p>
+              <p>The Parties acknowledge and accept that the appointment of the Mediator comes into effect upon the execution of this Agreement by the Parties and by the Mediator, and agree with the assistance of the Mediator, to try to settle the issue/s in dispute by mediation as per the provisions of this Agreement and unconditionally agree to its terms.The Parties hereby undertake to participate in a forthright, bona fide manner at all times during mediation and to make genuine efforts to negotiate a reasonable resolution of the issue/s in dispute. Furthermore, the Parties agree to negotiate in good faith, to include;</p>
               <p className="ml-4">(a) a willingness to consider putting forward options for the resolution of the dispute, and</p>
               <p className="ml-4">(b) a willingness to consider such options for the resolution of the issue/s in dispute as may be put forward by another party or through the mediator, or by the mediator in accordance with section 8 (4) of the Act, where requested;</p>
             </AgreementSection>
@@ -399,23 +381,23 @@ const CommercialAgreementBuilder: React.FC = () => {
                 <p className="ml-8">(ii) obtain independent advice, including legal advice, at any time during the mediation.</p>
                 <p className="ml-4">(d) The Parties and the Mediator, having regard to the nature of the dispute, shall make every reasonable effort to conclude the mediation in an expeditious manner which is likely to minimise costs.</p>
                 <p className="ml-4">(e) Subject to the provisions of this Agreement and subject to the confidentiality of the mediation, the Mediator may withdraw from the mediation at any time during the mediation by notice in writing given to the Parties stating the Mediator's general reasons for the withdrawal.</p>
-                <p className="ml-4">(f) A withdrawal by the Mediator from the mediation shall not of itself prevent the Mediator from again becoming the mediator in the mediation. Where the Mediator withdraws from the mediation, the Mediator shall return the fees and costs paid in respect of that portion of time during which the Mediator was paid to act as the Mediator and for which he or she will no longer act as the mediator.</p>
+                <p className="ml-4">(f) A withdrawal by the Mediator from the mediation shall not of itself prevent the Mediator from again becoming the mediator in the mediation.Where the Mediator withdraws from the mediation, the Mediator shall return the fees and costs paid in respect of that portion of time during which the Mediator was paid to act as the Mediator and for which he or she will no longer act as the mediator.</p>
                 <p className="ml-4">(g) It is for the parties to determine the outcome of the mediation.</p>
                 <p className="ml-4">(h) The fees and costs of the mediation shall not be contingent on its outcome.</p>
             </AgreementSection>
 
             <AgreementSection title="Confidentiality">
-                <p>The Parties, their advisors, all persons attending the mediation (to include non-parties) and the Mediator (and any co-mediator), agree that any written summaries of the Parties\' cases, all documents made available to the Mediator or by the Mediator or exchanged by the Parties, any statements whether oral or written made in the course of the mediation by the parties or the mediator and any concessions or admissions of law or fact, shall be entirely and completely confidential in accordance with section 10 of the Act and shall be privileged accordingly, provided that the foregoing shall not prohibit the discovery, inspection or production of documents which, had the mediation not taken place, would otherwise be subject to discovery, inspection or production.</p>
+                <p>The Parties, their advisors, all persons attending the mediation (to include non-parties) and the Mediator (and any co-mediator), agree that any written summaries of the Parties' cases, all documents made available to the Mediator or by the Mediator or exchanged by the Parties, any statements whether oral or written made in the course of the mediation by the parties or the mediator and any concessions or admissions of law or fact, shall be entirely and completely confidential in accordance with section 10 of the Act and shall be privileged accordingly, provided that the foregoing shall not prohibit the discovery, inspection or production of documents which, had the mediation not taken place, would otherwise be subject to discovery, inspection or production.</p>
                 <p>Evidence introduced into or used in the mediation that is otherwise admissible or subject to discovery in proceedings shall not be or become inadmissible or protected by privilege in such proceedings solely because it was introduced into or used in the mediation.</p>
                 <p>All oral submissions, oral statements or oral concessions or admissions of law or fact made in or for the purposes of the Mediation shall be inadmissible as evidence in any legal or similar proceedings whatever.</p>
                 <p>The Mediator may hold private sessions or caucus with one party, or one party and their legal adviser. These private sessions are designed to improve the Mediator’s understanding of that party’s position and to facilitate the Mediator in expressing each party’s viewpoint during discussions. Information gained by the Mediator in such a session is confidential unless (a) it is in any event publicly available or, (b) the Mediator(s) is specifically authorised by that party and/or their legal adviser to disclose it. The Mediator will respect the overall confidentiality of the proceedings, except where obliged to do otherwise in accordance with section 10 of the Act. Where such a disclosure is deemed necessary, the Mediator will inform the parties.</p>
                 <p>The parties agree not to subpoena or otherwise require the mediator to testify or produce records, notes or any other information or material whatsoever arising out of the mediation in any future alternative dispute resolution or proceedings.</p>
-                <p>The Parties agree that they cannot see, inspect or in any way make use of the Mediator\'s notes or any document prepared by him/her for the purposes of or in the course of the Mediation.</p>
+                <p>The Parties agree that they cannot see, inspect or in any way make use of the Mediator's notes or any document prepared by him/her for the purposes of or in the course of the Mediation.</p>
                 <p>The names of the representatives of the Parties who will be at the mediation will be notified to the Mediator who will notify all parties. The Parties’ or the Parties’ respective representatives at the mediation attend the mediation with full authority to settle the issue/s in dispute.</p>
             </AgreementSection>
 
             <AgreementSection title="Preservation of right">
-                <p>If no written settlement agreement, ‘Mediation Settlement’ is signed by the Parties to settle their dispute, all the Parties\' rights shall be reserved and shall remain in all respects unaffected by the mediation save to the extent provided for in this Agreement. The Parties agree that in such circumstances any documents and written summaries of case furnished to them by the other Party shall be forthwith returned to that Party, and that no copies shall be kept by them. Any documents furnished by the Parties to the Mediator shall, in such circumstances, be returned promptly. The Parties agree that their entering into this agreement shall not prevent any of them from commencing or continuing any litigation or arbitration in relation to the issue/s in dispute.</p>
+                <p>If no written settlement agreement, ‘Mediation Settlement’ is signed by the Parties to settle their dispute, all the Parties' rights shall be reserved and shall remain in all respects unaffected by the mediation save to the extent provided for in this Agreement. The Parties agree that in such circumstances any documents and written summaries of case furnished to them by the other Party shall be forthwith returned to that Party, and that no copies shall be kept by them. Any documents furnished by the Parties to the Mediator shall, in such circumstances, be returned promptly. The Parties agree that their entering into this agreement shall not prevent any of them from commencing or continuing any litigation or arbitration in relation to the issue/s in dispute.</p>
             </AgreementSection>
 
             <AgreementSection title="Mediation Process and Termination">

@@ -40,6 +40,22 @@ export interface Contact {
 }
 
 /**
+ * Represents a party involved in a case.
+ */
+export interface Party {
+  id: string;
+  name: string;
+  type: string; // e.g., 'Client', 'Opposing Party', 'Child'
+  contact?: { // Optional contact details directly within party
+    email?: string;
+    phone?: string;
+  };
+  address?: string;
+  // Add any other party-specific fields, e.g., legal representative ID
+  legalRepresentativeId?: string; // Example
+}
+
+/**
  * Represents a legal Case or case.
  */
 export interface Case {
@@ -47,10 +63,11 @@ export interface Case {
   caseFileNumber: string; // The primary case identifier shown to users
   title: string; // e.g., "Smith v. Jones Mediation"
   status: string; // e.g., 'Open', 'Closed', 'Pending'
-  parties?: string[]; // List of involved parties (could reference Contact IDs)
+  parties?: Party[]; // Changed from string[] to Party[]
   description?: string;
   createdAt?: Date;
   updatedAt?: Date; // Make this optional as it's not always present initially
+  dateOpened?: string; // Added: Date the case was opened (ISO string)
   type?: string; // Added: e.g., 'Divorce', 'Civil', 'Family'
   clientName?: string; // Added: Primary client's name
   email?: string; // Added: Primary client's email
