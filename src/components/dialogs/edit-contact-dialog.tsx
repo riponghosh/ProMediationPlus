@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAllCaseFileNumbers } from "@/services/localDbService";
 
 const formSchema = z.object({
   id: z.string(),
@@ -42,11 +43,27 @@ interface EditContactDialogProps {
 
 export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditContactDialogProps) {
   const [open, setOpen] = useState(false);
+  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
   
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: contact,
   });
+
+  useEffect(() => {
+    if (open) {
+      const fetchCaseFiles = async () => {
+        try {
+          const numbers = await getAllCaseFileNumbers();
+          setCaseFileNumbers(numbers);
+        } catch (error) {
+          console.error("Failed to fetch case file numbers:", error);
+          toast.error("Failed to load case file numbers for selection.");
+        }
+      };
+      fetchCaseFiles();
+    }
+  }, [open]);
 
   function onSubmit(values: ContactFormValues) {
     // Save the updated contact
@@ -198,7 +215,9 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contact Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={(value) => {
+                    field.onChange(value);
+                  }} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select contact type" />
@@ -207,8 +226,6 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
                     <SelectContent>
                       <SelectItem value="New Enquiry">New Enquiry</SelectItem>
                       <SelectItem value="Client">Client</SelectItem>
-                      <SelectItem value="Solicitor">Solicitor</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -216,30 +233,38 @@ export function EditContactDialog({ contact, onUpdateContact, onDelete }: EditCo
               )}
             />
 
-            {/* Display Case File Number as read-only text */}
-            <FormField
-              control={form.control}
-              name="linkedCaseFileNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Case File Number</FormLabel>
-                  <FormControl>
-                    {/* Use a simple input, make it readOnly, and style to indicate it's not for editing */}
-                    <Input 
-                      {...field} 
-                      value={field.value || ""} // Ensure value is not undefined
-                      readOnly 
-                      className="border-dashed bg-muted text-muted-foreground" // Style to look disabled/read-only
-                      placeholder="CF-000000" 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+            {form.watch("type") !== "New Enquiry" && (
+              <FormField
+                control={form.control}
+                name="linkedCaseFileNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link to Case (Optional)</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "__NONE__" ? undefined : value)} value={field.value || "__NONE__"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a case to link" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__NONE__">None</SelectItem>
+                        {caseFileNumbers.map((cfn) => (
+                          <SelectItem key={cfn} value={cfn}>
+                            {cfn}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <DialogFooter>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

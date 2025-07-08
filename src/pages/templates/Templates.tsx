@@ -23,10 +23,10 @@ const allTemplates = [
 	{
 		id: 7,
 		title: "Statement of Means",
-		category: "worksheet", // Stays as worksheet, will get default color
+		category: "mediation", // Changed from "worksheet" to "mediation"
 		lastUsed: "2023-06-15T16:45:00",
 		description: "Financial disclosure form documenting income, expenses, assets, and liabilities of parties.",
-		// No specific path, will use generic /templates/:id
+		path: "/statement-of-means-template", // ADDED THIS LINE
 	},
 	{
 		id: 8,

@@ -184,7 +184,9 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contact Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={(value) => {
+                    field.onChange(value);
+                  }} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select contact type" />
@@ -193,10 +195,6 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
                     <SelectContent>
                       <SelectItem value="New Enquiry">New Enquiry</SelectItem>
                       <SelectItem value="Client">Client</SelectItem>
-                      <SelectItem value="Solicitor">Solicitor</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                      <SelectItem value="Witness">Witness</SelectItem>
-                      <SelectItem value="Opposing Party">Opposing Party</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -204,31 +202,33 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="linkedCaseFileNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Link to Case (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a case to link" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__NONE__">None</SelectItem> {/* Option for no selection */}
-                      {caseFileNumbers.map((cfn) => (
-                        <SelectItem key={cfn} value={cfn}>
-                          {cfn}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {form.watch("type") !== "New Enquiry" && (
+              <FormField
+                control={form.control}
+                name="linkedCaseFileNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link to Case (Optional)</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "__NONE__" ? undefined : value)} value={field.value || "__NONE__"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a case to link" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__NONE__">None</SelectItem>
+                        {caseFileNumbers.map((cfn) => (
+                          <SelectItem key={cfn} value={cfn}>
+                            {cfn}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>

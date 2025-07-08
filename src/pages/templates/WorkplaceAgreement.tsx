@@ -12,20 +12,25 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Link } from 'react-router-dom'; // Added Link import
+import { ChevronLeft, Download, FileText, Info } from 'lucide-react'; // Added icons
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added Alert components
+import { getAllCaseFileNumbers } from '@/services/localDbService'; // Corrected import for case file numbers
 
 // --- Zod Schema Definition ---
 const workplaceAgreementSchema = z.object({
   linkedCaseFileNumber: z.string().optional(),
   party1Name: z.string().min(1, "Party 1 name is required."),
   party2Name: z.string().min(1, "Party 2 name is required."),
+  mediatorName: z.string().optional(), // Added for mediator auto-population
   agreementDate: z.string().min(1, "Agreement date is required."),
   // Add signature fields
   party1SignatureName: z.string().optional(),
-  party1SignatureDate: z.string().optional(),
+  party1SignatureDate: z.string().optional().default(new Date().toISOString().split('T')[0]),
   party2SignatureName: z.string().optional(),
-  party2SignatureDate: z.string().optional(),
+  party2SignatureDate: z.string().optional().default(new Date().toISOString().split('T')[0]),
   mediatorSignatureName: z.string().optional(),
-  mediatorSignatureDate: z.string().optional(),
+  mediatorSignatureDate: z.string().optional().default(new Date().toISOString().split('T')[0]),
 });
 
 type WorkplaceAgreementData = z.infer<typeof workplaceAgreementSchema>;
@@ -116,7 +121,7 @@ const AgreementTextField: React.FC<AgreementTextFieldProps> = ({ control, name, 
     />
 );
 
-const WorkplaceAgreement: React.FC = () => {
+const WorkplaceAgreementBuilder: React.FC = () => { // Renamed export
   const isMobile = useIsMobile();
   const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
   const form = useForm<WorkplaceAgreementData>({
@@ -125,6 +130,7 @@ const WorkplaceAgreement: React.FC = () => {
       linkedCaseFileNumber: undefined,
       party1Name: "",
       party2Name: "",
+      mediatorName: "", // Added to default values
       agreementDate: new Date().toISOString().split('T')[0], // Default to today's date
       party1SignatureName: "",
       party1SignatureDate: new Date().toISOString().split('T')[0],
@@ -139,13 +145,13 @@ const WorkplaceAgreement: React.FC = () => {
 
   const watchedParty1Name = form.watch("party1Name");
   const watchedParty2Name = form.watch("party2Name");
+  const watchedMediatorName = form.watch("mediatorName"); // Watch mediator name
 
   useEffect(() => {
     const fetchCaseFiles = async () => {
       try {
-        // Replace with actual service call to fetch case file numbers
-        setCaseFileNumbers(['CASE-001', 'CASE-002', 'CASE-003']);
-        console.log("Fetched case file numbers (placeholder)");
+        const numbers = await getAllCaseFileNumbers(); // Use actual service
+        setCaseFileNumbers(numbers);
       } catch (error) {
         console.error("Failed to fetch case file numbers:", error);
         toast.error("Failed to load case file numbers for selection.");
@@ -165,6 +171,12 @@ const WorkplaceAgreement: React.FC = () => {
       form.setValue("party2SignatureName", watchedParty2Name, { shouldValidate: false });
     }
   }, [watchedParty2Name, form]);
+
+  useEffect(() => {
+    if (watchedMediatorName && !form.getValues("mediatorSignatureName")) {
+      form.setValue("mediatorSignatureName", watchedMediatorName, { shouldValidate: false });
+    }
+  }, [watchedMediatorName, form]);
 
   function onSubmit(data: WorkplaceAgreementData) {
     console.log("Workplace Agreement Data:", JSON.stringify(data, null, 2));
@@ -240,32 +252,27 @@ const WorkplaceAgreement: React.FC = () => {
     }
   };
 
-  const renderSignatureBlock = (partyType: 'Party 1' | 'Party 2' | 'Mediator', nameField: keyof WorkplaceAgreementData, dateField: keyof WorkplaceAgreementData) => (
-    <div className="space-y-3 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <AgreementInputField
-                control={form.control}
-                name={nameField}
-                label={`Signed By (${partyType}):`}
-                placeholder={`Enter name of ${partyType.toLowerCase()}`}
-            />
-            <AgreementInputField
-                control={form.control}
-                name={dateField}
-                label="Date:"
-                type="date"
-            />
-        </div>
-    </div>
-  );
-
   return (
     <Layout>
-      <div className={`container mx-auto px-4 py-8 ${isMobile ? "space-y-4" : "space-y-6"}`}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 bg-white p-6 md:p-10 rounded-lg shadow-xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-8">ORGANISATIONAL & WORKPLACE AGREEMENT</h2>
+      <div className={`flex flex-col ${isMobile ? "space-y-4" : "space-y-6"} pb-10`}>
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" asChild>
+                    <Link to="/templates">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className={`${isMobile ? "text-xl" : "text-3xl"} font-bold tracking-tight`}>Workplace Agreement</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Create a detailed agreement for workplace mediation.
+                    </p>
+                </div>
+            </div>
+        </div>
 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 p-4 md:p-8 max-w-4xl mx-auto">
             <FormField
                 control={form.control}
                 name="linkedCaseFileNumber"
@@ -279,6 +286,7 @@ const WorkplaceAgreement: React.FC = () => {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                                <SelectItem value="__NONE__">None</SelectItem>
                                 {caseFileNumbers.length > 0 ? (
                                     caseFileNumbers.map((num) => (
                                         <SelectItem key={num} value={num}>{num}</SelectItem>
@@ -293,6 +301,17 @@ const WorkplaceAgreement: React.FC = () => {
                 )}
             />
 
+            <Alert variant="default" className="bg-purple-50 border-purple-200">
+                <Info className="h-4 w-4 text-purple-700" />
+                <AlertTitle className="text-purple-800 font-semibold">Guidance & Template</AlertTitle>
+                <AlertDescription className="text-purple-700 space-y-1">
+                    <p>This form helps you structure a Workplace Agreement based on a template. Fill in the details as accurately as possible.</p>
+                    <p>It is strongly advised that both parties seek independent advice before signing any agreement. This template is for guidance and may need adaptation to specific circumstances.</p>
+                </AlertDescription>
+            </Alert>
+
+            <h1 className="text-2xl font-bold text-center text-purple-800">ORGANISATIONAL & WORKPLACE AGREEMENT</h1>
+
             <AgreementSection title="Agreement to Mediate">
               <p>This document relates to a Mediation process between</p>
               <AgreementInputField control={form.control} name="party1Name" label="Party 1 Name" placeholder="Enter Party 1's full name" />
@@ -303,7 +322,8 @@ const WorkplaceAgreement: React.FC = () => {
             </AgreementSection>
 
             <AgreementSection title="The Mediator">
-              <p>The Parties Agree to the Mediator conducting the Mediation process. The Mediator is accredited to the Mediators’ Institute of Ireland and acting in accordance with its Code of Ethics and Practice (available at www.themii.ie ). The Mediator will act as an impartial facilitator to assist the parties in a negotiation aimed at the resolution of issues between them. All parties will work with the Mediator to isolate points of agreement and disagreement, to identify their interests, to explore alternative solutions and to consider compromises or accommodations. The Mediator is committed to processing parties’ personal information fairly and in compliance with the Code of Ethics and Practice, The Mediation Act 2017, GDPR legislation and Data Protection Act 2018.</p>
+              <AgreementInputField control={form.control} name="mediatorName" label="Mediator Name" placeholder="Enter Mediator's full name" />
+              <p>The Parties Agree to the Mediator conducting the Mediation process. The Mediator is accredited to the Mediators’ Institute of Ireland and acting in accordance with its Code of Ethics and Practice (available at www.themii.ie ). The Mediator will act as an impartial facilitator to assist the parties in a negotiation aimed at the resolution of issues between them. All parties will work with the Mediator to isolate points of agreement and disagreement, to identify their interests, to explore alternative solutions and to consider compromises or accommodations. The Mediator will not decide or indicate who is right or who is wrong or make decisions related to the outcome of the Mediation. The Mediator is committed to processing parties’ personal information fairly and in compliance with the Code of Ethics and Practice, The Mediation Act 2017, GDPR legislation and Data Protection Act 2018.</p>
             </AgreementSection>
 
             <AgreementSection title="Parties agree the following:">
@@ -346,25 +366,39 @@ const WorkplaceAgreement: React.FC = () => {
             </AgreementSection>
 
             <AgreementSection title="Signatures">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>Date:</div>
-                <div>Party 1-Signature</div>
-                <div>Party 2-Signature</div>
-                <div>Mediator -Signature</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Party 1 Signature */}
+                <div className="space-y-2 border p-4 rounded-md text-center">
+                    <FormLabel className="font-semibold">Party 1</FormLabel>
+                    <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                    <AgreementInputField control={form.control} name="party1SignatureName" label="Name (Party 1)" placeholder="Party 1 Printed Name" />
+                    <AgreementInputField control={form.control} name="party1SignatureDate" label="Date" type="date" />
+                </div>
+                {/* Party 2 Signature */}
+                <div className="space-y-2 border p-4 rounded-md text-center">
+                    <FormLabel className="font-semibold">Party 2</FormLabel>
+                    <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                    <AgreementInputField control={form.control} name="party2SignatureName" label="Name (Party 2)" placeholder="Party 2 Printed Name" />
+                    <AgreementInputField control={form.control} name="party2SignatureDate" label="Date" type="date" />
+                </div>
+                {/* Mediator Signature */}
+                <div className="space-y-2 border p-4 rounded-md text-center">
+                    <FormLabel className="font-semibold">Mediator</FormLabel>
+                    <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                    <AgreementInputField control={form.control} name="mediatorSignatureName" label="Name (Mediator)" placeholder="Mediator Printed Name" />
+                    <AgreementInputField control={form.control} name="mediatorSignatureDate" label="Date" type="date" />
+                    <FormDescription className="text-xs">Signed by the mediator in accordance with section 2(1)(o) Mediation Act 2017</FormDescription>
+                </div>
               </div>
-              <AgreementInputField control={form.control} name="agreementDate" label="Agreement Date" type="date" />
-              {renderSignatureBlock("Party 1", "party1SignatureName", "party1SignatureDate")}
-              {renderSignatureBlock("Party 2", "party2SignatureName", "party2SignatureDate")}
-              {renderSignatureBlock("Mediator", "mediatorSignatureName", "mediatorSignatureDate")}
               <p className="mt-4 text-sm text-muted-foreground">NOTE: If Mediation is to take place on a digital platform, parties’ agreement to the terms here within can be confirmed via email to the Mediator.</p>
             </AgreementSection>
 
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 mt-10 pt-6 border-t">
-              <Button id="save-agreement-button" type="submit" variant="default" size="lg" className="w-full sm:w-auto">
-                Save Agreement Data
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-10">
+              <Button id="save-agreement-button" type="submit" size="lg">
+                <FileText className="mr-2 h-5 w-5" /> Save Agreement Data
               </Button>
-              <Button id="download-pdf-button" type="button" variant="outline" size="lg" onClick={handleDownloadPdf} className="w-full sm:w-auto">
-                Download as PDF
+              <Button id="download-pdf-button" type="button" variant="outline" size="lg" onClick={handleDownloadPdf}>
+                <Download className="mr-2 h-5 w-5" /> Download as PDF
               </Button>
             </div>
           </form>
@@ -374,4 +408,4 @@ const WorkplaceAgreement: React.FC = () => {
   );
 };
 
-export default WorkplaceAgreement;
+export default WorkplaceAgreementBuilder;

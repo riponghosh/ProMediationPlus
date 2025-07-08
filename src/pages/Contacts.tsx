@@ -305,8 +305,6 @@ const ContactsPage = () => {
     switch(activeTab) {
       case "new enquiry": return "New Enquiries";
       case "client": return "Clients";
-      case "solicitor": return "Solicitors";
-      case "general": return "General Contacts";
       default: return "All Contacts";
     }
   };
@@ -482,30 +480,6 @@ const ContactsPage = () => {
                   >
                     <User className={iconSizeClass} />
                     Clients ({clientCount})
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="solicitor"
-                    className={`
-                      flex items-center justify-center gap-1.5
-                      ${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
-                      rounded-md
-                      data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
-                    `}
-                  >
-                    <UserCog className={iconSizeClass} />
-                    {isMobile ? "Sols" : "Solicitors"} ({solicitorCount})
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="general"
-                    className={`
-                      flex items-center justify-center gap-1.5
-                      ${isMobile ? 'text-xs px-2 py-1.5' : 'text-sm px-3 py-1.5'}
-                      rounded-md
-                      data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm
-                    `}
-                  >
-                    <Users className={iconSizeClass} />
-                    {isMobile ? "General" : "General"} ({generalCount})
                   </TabsTrigger>
                 </TabsList>
                 

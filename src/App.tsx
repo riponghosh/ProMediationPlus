@@ -42,6 +42,7 @@ import WorkplaceAgreementBuilder from "./pages/templates/WorkplaceAgreement";
 import { TemplateBuilder } from "./pages/templates/TemplateBuilder";
 import { ClientEnquiryForm } from "./pages/templates/NewEnquiry"; // Added import
 import ClientIntakePage from "./pages/templates/ClientIntake"; // Added import
+import { StatementOfMeansBuilder } from './pages/templates/StatementOfMeans'; // Import the new component
 
 // Admin section imports
 import AdminLayout from "./components/layout/admin/AdminLayout";
@@ -116,6 +117,7 @@ const App = () => (
           <Route path="/client-intake-form" element={<ClientIntakePage />} />
           <Route path="/mediation-agreement-template" element={<MediationAgreementBuilder />} />
           <Route path="/child-maintenance-template" element={<MediationAgreementBuilder />} />
+          <Route path="/statement-of-means-template" element={<StatementOfMeansBuilder />} /> {/* ADDED THIS LINE */}
           
           {/* Generic template routes (must be last in this block) */}
           <Route path="/template-builder" element={<TemplateBuilder />} />

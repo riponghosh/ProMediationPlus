@@ -6,17 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Added Select
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Layout } from '@/components/layout/layout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-// import { getAllCaseFileNumbers } from '@/services/caseService'; // Assuming a service to get case file numbers
+import { Link } from 'react-router-dom'; // Added Link import
+import { ChevronLeft, Download, FileText, Info } from 'lucide-react'; // Added icons
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added Alert components
+import { getAllCaseFileNumbers } from '@/services/localDbService'; // Corrected import for case file numbers
 
 // --- Zod Schema Definition ---
 const commercialAgreementSchema = z.object({
-  linkedCaseFileNumber: z.string().optional(), // Ensured this is present
+  linkedCaseFileNumber: z.string().optional(),
   agreementMadeDay: z.string().min(1, "Day is required."),
   agreementMadeMonth: z.string().min(1, "Month is required."),
   agreementMadeYear: z.string().min(1, "Year is required.").default(new Date().getFullYear().toString()),
@@ -130,7 +133,7 @@ const AgreementTextField: React.FC<AgreementTextFieldProps> = ({ control, name, 
 
 const CommercialAgreementBuilder: React.FC = () => {
   const isMobile = useIsMobile();
-  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]); // Added state for case file numbers
+  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
   const form = useForm<CommercialAgreementData>({
     resolver: zodResolver(commercialAgreementSchema),
     defaultValues: {
@@ -158,18 +161,14 @@ const CommercialAgreementBuilder: React.FC = () => {
 
   const watchedFirstPartyName = form.watch("firstPartyName");
   const watchedSecondPartyName = form.watch("secondPartyName");
-  // Assuming mediator name might be part of mediatorNameAndAddress, adjust if it's separate
-  // const watchedMediatorName = form.watch("mediatorName"); 
+  const watchedMediatorNameAndAddress = form.watch("mediatorNameAndAddress"); 
 
 
-  useEffect(() => { // Added useEffect for fetching case file numbers (template)
+  useEffect(() => {
     const fetchCaseFiles = async () => {
       try {
-        // const numbers = await getAllCaseFileNumbers(); // Example, replace with actual service call
-        // setCaseFileNumbers(numbers);
-        // For now, using placeholder data:
-        setCaseFileNumbers(['CASE-001', 'CASE-002', 'CASE-003']); 
-        console.log("Fetched case file numbers (placeholder)");
+        const numbers = await getAllCaseFileNumbers();
+        setCaseFileNumbers(numbers);
       } catch (error) {
         console.error("Failed to fetch case file numbers:", error);
         toast.error("Failed to load case file numbers for selection.");
@@ -190,12 +189,16 @@ const CommercialAgreementBuilder: React.FC = () => {
     }
   }, [watchedSecondPartyName, form]);
   
-  // Effect for mediator signature name if applicable
-  // React.useEffect(() => {
-  //   if (watchedMediatorName && !form.getValues("mediatorSignatureName")) {
-  //     form.setValue("mediatorSignatureName", watchedMediatorName, { shouldValidate: false });
-  //   }
-  // }, [watchedMediatorName, form]);
+  React.useEffect(() => {
+    // Attempt to extract mediator name from the combined field
+    if (watchedMediatorNameAndAddress) {
+      const mediatorNameMatch = watchedMediatorNameAndAddress.match(/^([^,]+)/); // Gets text before first comma
+      const mediatorName = mediatorNameMatch ? mediatorNameMatch[1].trim() : watchedMediatorNameAndAddress.trim();
+      if (mediatorName && !form.getValues("mediatorSignatureName")) {
+        form.setValue("mediatorSignatureName", mediatorName, { shouldValidate: false });
+      }
+    }
+  }, [watchedMediatorNameAndAddress, form]);
 
 
   function onSubmit(data: CommercialAgreementData) {
@@ -222,9 +225,6 @@ const CommercialAgreementBuilder: React.FC = () => {
     if (downloadButton) downloadButton.style.display = 'none';
     if (saveButton) saveButton.style.display = 'none';
     
-    // Ensure all content is visible for html2canvas
-    // May need to temporarily expand any collapsed sections if applicable
-
     try {
       const canvas = await html2canvas(formElement, {
         scale: 2,
@@ -232,7 +232,6 @@ const CommercialAgreementBuilder: React.FC = () => {
         logging: false,
         windowWidth: formElement.scrollWidth,
         windowHeight: formElement.scrollHeight,
-        // Allow Taint can be problematic, useCORS is preferred
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -276,34 +275,28 @@ const CommercialAgreementBuilder: React.FC = () => {
     }
   };
   
-  const renderSignatureBlock = (partyType: 'First Party' | 'Second Party' | 'Mediator', nameField: keyof CommercialAgreementData, dateField: keyof CommercialAgreementData) => (
-    <div className="space-y-3 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <AgreementInputField
-                control={form.control}
-                name={nameField}
-                label={`Signed By (${partyType}):`}
-                placeholder={`Enter name of ${partyType.toLowerCase()}`}
-            />
-            <AgreementInputField
-                control={form.control}
-                name={dateField}
-                label="Date:"
-                type="date"
-            />
-        </div>
-    </div>
-  );
-
-
   return (
     <Layout>
-      <div className={`container mx-auto px-4 py-8 ${isMobile ? "space-y-4" : "space-y-6"}`}>
+      <div className={`flex flex-col ${isMobile ? "space-y-4" : "space-y-6"} pb-10`}>
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" asChild>
+                    <Link to="/templates">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className={`${isMobile ? "text-xl" : "text-3xl"} font-bold tracking-tight`}>Commercial Mediation Agreement</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Create a detailed agreement for commercial mediation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 bg-white p-6 md:p-10 rounded-lg shadow-xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-8">COMMERCIAL MEDIATION AGREEMENT</h2>
-            
-            <FormField // Added Link to Case File dropdown
+          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 p-4 md:p-8 max-w-4xl mx-auto">
+            <FormField
                 control={form.control}
                 name="linkedCaseFileNumber"
                 render={({ field }) => (
@@ -316,6 +309,7 @@ const CommercialAgreementBuilder: React.FC = () => {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                                <SelectItem value="__NONE__">None</SelectItem>
                                 {caseFileNumbers.length > 0 ? (
                                     caseFileNumbers.map((num) => (
                                         <SelectItem key={num} value={num}>{num}</SelectItem>
@@ -330,7 +324,18 @@ const CommercialAgreementBuilder: React.FC = () => {
                 )}
             />
 
-            <AgreementSection title="Agreement Details" className="bg-slate-50/50">
+            <Alert variant="default" className="bg-purple-50 border-purple-200">
+                <Info className="h-4 w-4 text-purple-700" />
+                <AlertTitle className="text-purple-800 font-semibold">Guidance & Template</AlertTitle>
+                <AlertDescription className="text-purple-700 space-y-1">
+                    <p>This form helps you structure a Commercial Mediation Agreement based on a template. Fill in the details as accurately as possible.</p>
+                    <p>It is strongly advised that both parties seek independent legal advice before signing any agreement. This template is for guidance and may need adaptation to specific circumstances.</p>
+                </AlertDescription>
+            </Alert>
+
+            <h1 className="text-2xl font-bold text-center text-purple-800">COMMERCIAL MEDIATION AGREEMENT</h1>
+            
+            <AgreementSection title="Agreement Details">
               <p className="text-center mb-6">
                 This AGREEMENT TO MEDIATE is made this
                 <FormField
@@ -447,20 +452,40 @@ const CommercialAgreementBuilder: React.FC = () => {
                 <AgreementTextField control={form.control} name="dataRetentionPolicyLink" label="Data Retention Policy Details" placeholder="The Mediator’s data retention policy is set out in the policy attached Appendix 1 or is available on the mediator’s website [amend as required]" rows={2}/>
             </AgreementSection>
 
-
-            <AgreementSection title="Executed as an Agreement by:">
-              {renderSignatureBlock("First Party", "firstPartySignatureName", "firstPartySignatureDate")}
-              {renderSignatureBlock("Second Party", "secondPartySignatureName", "secondPartySignatureDate")}
-              {renderSignatureBlock("Mediator", "mediatorSignatureName", "mediatorSignatureDate")}
+            <AgreementSection title="Signatures">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* First Party Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">First Party</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                        <AgreementInputField control={form.control} name="firstPartySignatureName" label="Name (First Party)" placeholder="First Party Printed Name" />
+                        <AgreementInputField control={form.control} name="firstPartySignatureDate" label="Date" type="date" />
+                    </div>
+                    {/* Second Party Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">Second Party</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                        <AgreementInputField control={form.control} name="secondPartySignatureName" label="Name (Second Party)" placeholder="Second Party Printed Name" />
+                        <AgreementInputField control={form.control} name="secondPartySignatureDate" label="Date" type="date" />
+                    </div>
+                    {/* Mediator Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">Mediator</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"></div>
+                        <AgreementInputField control={form.control} name="mediatorSignatureName" label="Name (Mediator)" placeholder="Mediator Printed Name" />
+                        <AgreementInputField control={form.control} name="mediatorSignatureDate" label="Date" type="date" />
+                        <FormDescription className="text-xs">Signed by the mediator in accordance with section 2(1)(o) Mediation Act 2017</FormDescription>
+                    </div>
+                </div>
             </AgreementSection>
 
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 mt-10 pt-6 border-t">
-              <Button id="save-agreement-button" type="submit" variant="default" size="lg" className="w-full sm:w-auto">
-                Save Agreement Data
-              </Button>
-              <Button id="download-pdf-button" type="button" variant="outline" size="lg" onClick={handleDownloadPdf} className="w-full sm:w-auto">
-                Download as PDF
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-10">
+                <Button type="submit" size="lg" id="save-agreement-button">
+                    <FileText className="mr-2 h-5 w-5" /> Save Agreement Data
+                </Button>
+                <Button type="button" size="lg" onClick={handleDownloadPdf} variant="outline" id="download-pdf-button">
+                    <Download className="mr-2 h-5 w-5" /> Download as PDF
+                </Button>
             </div>
           </form>
         </Form>
