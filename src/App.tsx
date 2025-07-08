@@ -32,14 +32,16 @@ import GuidesBusinessSetUp from "./pages/guides/GuidesBusinessSetUp"; // Added i
 import GuidesGrowYourBusiness from "./pages/guides/GuidesGrowYourBusiness"; // Added import
 import GuidesMediateSuccess from "./pages/guides/GuidesMediateSuccess"; // Added import
 import { MediationAgreementBuilder } from "./pages/templates/MediationAgreement";
-import { ParentingAgreementBuilder } from "./pages/templates/ParentingAgreement";
-import { SeparationAgreementBuilder } from "./pages/templates/SeperationAgreement";
+import { ParentingAgreementBuilder } from './pages/templates/ParentingAgreement'; // Import the component
+import SeparationAgreementBuilder from "./pages/templates/SeperationAgreement";
 import NotFound from "./pages/NotFound";
 import CalendlyCallbackPage from "./pages/CalendlyCallbackPage"; // Added import
-import CohabitingAgreement from "./pages/templates/CohabitingAgreement"; // Corrected import path
-import CommercialAgreement from "./pages/templates/CommercialAgreement"; // Reverted import path
-import WorkplaceAgreement from "./pages/templates/WorkplaceAgreement"; // Added import
+import { CohabitingAgreementBuilder } from "./pages/templates/CohabitingAgreement"; // Use named import
+import CommercialAgreementBuilder from "./pages/templates/CommercialAgreement";
+import WorkplaceAgreementBuilder from "./pages/templates/WorkplaceAgreement";
 import { TemplateBuilder } from "./pages/templates/TemplateBuilder";
+import { ClientEnquiryForm } from "./pages/templates/NewEnquiry"; // Added import
+import ClientIntakePage from "./pages/templates/ClientIntake"; // Added import
 
 // Admin section imports
 import AdminLayout from "./components/layout/admin/AdminLayout";
@@ -104,14 +106,20 @@ const App = () => (
           <Route path="/guides/business-set-up" element={<GuidesBusinessSetUp />} /> {/* Add route for GuidesBusinessSetUp */}
           <Route path="/guides/grow-your-business" element={<GuidesGrowYourBusiness />} /> {/* Add route for GuidesGrowYourBusiness */}
           <Route path="/guides/mediate-success" element={<GuidesMediateSuccess />} /> {/* Add route for GuidesMediateSuccess */}
-          <Route path="/mediation-template" element={<MediationAgreementBuilder />} /> {/* Add route for MediationAgreementBuilder */}
-          <Route path="/parenting-template" element={<ParentingAgreementBuilder />} /> {/* Add route for ParentingAgreementBuilder */}
-          <Route path="/separation-template" element={<SeparationAgreementBuilder />} /> {/* Add route for SeparationAgreementBuilder */}
-          <Route path="/calendly/callback" element={<CalendlyCallbackPage />} /> {/* Added Calendly callback route */}
-          <Route path="/cohabiting-template" element={<CohabitingAgreement />} /> {/* Corrected component */}
-          <Route path="/commercial-agreement-template" element={<CommercialAgreement />} />
-          <Route path="/workplace-agreement-template" element={<WorkplaceAgreement />} /> {/* Added route */}
+          <Route path="/mediation-template" element={<MediationAgreementBuilder />} />
+          <Route path="/parenting-template" element={<ParentingAgreementBuilder />} />
+          <Route path="/separation-template" element={<SeparationAgreementBuilder />} />
+          <Route path="/cohabiting-template" element={<CohabitingAgreementBuilder />} />
+          <Route path="/commercial-agreement-template" element={<CommercialAgreementBuilder />} />
+          <Route path="/workplace-agreement-template" element={<WorkplaceAgreementBuilder />} />
+          <Route path="/client-enquiry-form" element={<ClientEnquiryForm />} />
+          <Route path="/client-intake-form" element={<ClientIntakePage />} />
+          <Route path="/mediation-agreement-template" element={<MediationAgreementBuilder />} />
+          <Route path="/child-maintenance-template" element={<MediationAgreementBuilder />} />
+          
+          {/* Generic template routes (must be last in this block) */}
           <Route path="/template-builder" element={<TemplateBuilder />} />
+          <Route path="/templates/:id" element={<TemplateBuilder />} />
           
           {/* Admin routes with AdminLayout */}
           <Route path="/admin" element={<AdminLayout />}>

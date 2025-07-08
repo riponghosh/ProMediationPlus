@@ -26,7 +26,7 @@ const allTemplates = [
 		category: "worksheet", // Stays as worksheet, will get default color
 		lastUsed: "2023-06-15T16:45:00",
 		description: "Financial disclosure form documenting income, expenses, assets, and liabilities of parties.",
-		path: "/template-builder", // Changed to generic template builder
+		// No specific path, will use generic /templates/:id
 	},
 	{
 		id: 8,
@@ -42,7 +42,7 @@ const allTemplates = [
 		category: "mediation", // Updated category
 		lastUsed: "2025-06-01T10:00:00",
 		description: "Formal agreement signed by parties prior to commencing mediation, outlining the terms and conditions of the mediation process.",
-		path: "/mediation-template", // Changed to match existing route
+		path: "/mediation-agreement-template", // Path was already specific
 	},
 	{
 		id: 10,
@@ -50,7 +50,7 @@ const allTemplates = [
 		category: "mediation", // Updated category
 		lastUsed: "2025-05-28T11:30:00",
 		description: "Template for detailing child maintenance payments, schedules, and related terms agreed upon by parents.",
-		path: "/template-builder", // Changed to generic template builder
+		path: "/child-maintenance-template", // Path was already specific
 	},
 	{
 		id: 11,
@@ -58,7 +58,7 @@ const allTemplates = [
 		category: "mediation", // Updated category
 		lastUsed: "2025-05-25T14:15:00",
 		description: "Agreement template for unmarried couples living together, outlining property rights, financial responsibilities, and other arrangements.",
-		path: "/template-builder", // Changed to generic template builder
+		path: "/cohabiting-template", // Path was already specific
 	},
 	{
 		id: 12,
@@ -325,7 +325,9 @@ const TemplatesPage = () => {
 															key={template.id} 
 															className={`overflow-hidden hover:border-primary/50 transition-colors ${styling.card}`}
 															onClick={() => {
-																navigate(template.path || `/templates/${template.id}`);
+																const targetPath = template.path || `/templates/${template.id}`;
+																console.log('Navigating to:', targetPath, 'for template:', template.title);
+																navigate(targetPath);
 															}}
 														>
 															<CardHeader className={`${isMobile ? "p-3" : "p-4"} ${styling.header}`}>

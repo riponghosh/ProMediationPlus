@@ -627,3 +627,5 @@ export function SeparationAgreementBuilder() {
         </Layout>
     );
 }
+
+export default SeparationAgreementBuilder;

@@ -12,6 +12,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Link } from 'react-router-dom'; // Added Link import
+import { ChevronLeft, Download, FileText, Info } from 'lucide-react'; // Added Info icon
+import { getAllCaseFileNumbers } from '@/services/localDbService'; // Added getAllCaseFileNumbers import
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added Alert imports
 
 // --- Zod Schema Definition ---
 const cohabitingAgreementSchema = z.object({
@@ -21,7 +25,7 @@ const cohabitingAgreementSchema = z.object({
   partyBName: z.string().min(1, "Party B name is required."),
   partyBAddress: z.string().min(1, "Party B address is required."),
   mediatorName: z.string().min(1, "Mediator name is required."),
-  mediatorAddress: z.string().min(1, "Mediator address is required."),
+  mediatorAddress: z.string().optional(), // Made optional as per original structure
   cohabitationStartDate: z.string().min(1, "Cohabitation start date is required."),
   propertyPurchaseDate: z.string().min(1, "Property purchase date is required."),
   relationshipEndDate: z.string().min(1, "Relationship end date is required."),
@@ -134,7 +138,7 @@ const AgreementTextField: React.FC<AgreementTextFieldProps> = ({ control, name, 
     />
 );
 
-const CohabitingAgreement: React.FC = () => {
+export function CohabitingAgreementBuilder() {
   const isMobile = useIsMobile();
   const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]);
   const form = useForm<CohabitingAgreementData>({
@@ -181,8 +185,8 @@ const CohabitingAgreement: React.FC = () => {
   useEffect(() => {
     const fetchCaseFiles = async () => {
       try {
-        setCaseFileNumbers(['CASE-001', 'CASE-002', 'CASE-003']);
-        console.log("Fetched case file numbers (placeholder)");
+        const numbers = await getAllCaseFileNumbers(); // Use actual service
+        setCaseFileNumbers(numbers);
       } catch (error) {
         console.error("Failed to fetch case file numbers:", error);
         toast.error("Failed to load case file numbers for selection.");
@@ -238,8 +242,8 @@ const CohabitingAgreement: React.FC = () => {
         scale: 2,
         useCORS: true,
         logging: false,
-        windowWidth: formElement.scrollWidth,
-        windowHeight: formElement.scrollHeight,
+        windowWidth: formElement.scrollWidth, // Ensure full width is captured
+        windowHeight: formElement.scrollHeight, // Ensure full height is captured
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -283,53 +287,42 @@ const CohabitingAgreement: React.FC = () => {
     }
   };
   
-  const renderSignatureBlock = (partyType: 'Party A' | 'Party B' | 'Mediator', nameField: keyof CohabitingAgreementData, dateField: keyof CohabitingAgreementData) => (
-    <div className="space-y-3 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <AgreementInputField
-                control={form.control}
-                name={nameField}
-                label={`Signed By (${partyType}):`}
-                placeholder={`Enter name of ${partyType.toLowerCase()}`}
-            />
-            <AgreementInputField
-                control={form.control}
-                name={dateField}
-                label="Date:"
-                type="date"
-            />
-        </div>
-    </div>
-  );
-
+  // Removed renderSignatureBlock as it's not used in the final JSX structure
 
   return (
     <Layout>
-      <div className={`container mx-auto px-4 py-8 ${isMobile ? "space-y-4" : "space-y-6"}`}>
+      <div className={`flex flex-col ${isMobile ? "space-y-4" : "space-y-6"} pb-10`}> {/* Adjusted container styling */}
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" asChild>
+                    <Link to="/templates">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className={`${isMobile ? "text-xl" : "text-3xl"} font-bold tracking-tight`}>Cohabiting Agreement</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Create a detailed agreement for cohabiting couples.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 bg-white p-6 md:p-10 rounded-lg shadow-xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-slate-800 mb-8">MEDIATION SETTLEMENT</h2>
-            
+          <form onSubmit={form.handleSubmit(onSubmit)} ref={formRef} className="space-y-8 p-4 md:p-8 max-w-4xl mx-auto"> {/* Adjusted form styling */}
             <FormField
                 control={form.control}
                 name="linkedCaseFileNumber"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel className="font-medium text-gray-700">Link to Case File (Optional)</FormLabel>
+                        <FormLabel>Link to Case (Optional)</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                                <SelectTrigger className="bg-white">
-                                    <SelectValue placeholder="Select a case file number" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select a case to link" /></SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {caseFileNumbers.length > 0 ? (
-                                    caseFileNumbers.map((num) => (
-                                        <SelectItem key={num} value={num}>{num}</SelectItem>
-                                    ))
-                                ) : (
-                                    <SelectItem value="no-cases" disabled>No case files available</SelectItem>
-                                )}
+                                <SelectItem value="__NONE__">None</SelectItem>
+                                {caseFileNumbers.map((cfn) => (<SelectItem key={cfn} value={cfn}>{cfn}</SelectItem>))}
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -337,7 +330,18 @@ const CohabitingAgreement: React.FC = () => {
                 )}
             />
 
-            <AgreementSection title="Cohabitant's Agreement">
+            <Alert variant="default" className="bg-purple-50 border-purple-200">
+                <Info className="h-4 w-4 text-purple-700" />
+                <AlertTitle className="text-purple-800 font-semibold">Guidance & Template</AlertTitle>
+                <AlertDescription className="text-purple-700 space-y-1">
+                    <p>This form helps you structure a Cohabiting Agreement based on a template. Fill in the details as accurately as possible.</p>
+                    <p>It is strongly advised that both parties seek independent legal advice before signing any agreement. This template is for guidance and may need adaptation to specific circumstances.</p>
+                </AlertDescription>
+            </Alert>
+
+            <h1 className="text-2xl font-bold text-center text-purple-800">COHABITING AGREEMENT</h1>
+
+            <AgreementSection title="Preamble">
               <p>THIS MEDIATION SETTLEMENT, a Cohabitant’s Agreement has been agreed with the assistance of the mediator <AgreementInputField control={form.control} name="mediatorName" label="Mediator Name" placeholder="Mediator Name" className="inline-block w-auto" /> in accordance with section 202 of the Civil Partnership and Certain Rights and Obligations of Cohabitants Act 2010, “the 2010 Act”, and the provisions of the Mediation Act 2017.</p>
               <p>Between;</p>
               <AgreementInputField control={form.control} name="partyAName" label="Party A Name" placeholder="Party A Name" />
@@ -351,7 +355,7 @@ const CohabitingAgreement: React.FC = () => {
             </AgreementSection>
 
             <AgreementSection title="Background">
-              <p>The parties lived together since <AgreementInputField control={form.control} name="cohabitationStartDate" label="Cohabitation Start Date" type="date" className="inline-block w-auto" />, they purchased a property together in <AgreementInputField control={form.control} name="propertyPurchaseDate" label="Property Purchase Date" type="date" className="inline-block w-auto" />. They are no longer in a relationship since <AgreementInputField control={form.control} name="relationshipEndDate" label="Relationship End Date" type="date" className="inline-block w-auto" />.</p>
+              <p>The parties lived together since <AgreementInputField control={form.control} name="cohabitationStartDate" label="Cohabitation Start Date" type="date" className="inline-block w-auto" />. They purchased a property together in <AgreementInputField control={form.control} name="propertyPurchaseDate" label="Property Purchase Date" type="date" className="inline-block w-auto" />. They are no longer in a relationship since <AgreementInputField control={form.control} name="relationshipEndDate" label="Relationship End Date" type="date" className="inline-block w-auto" />.</p>
               <p>There are <AgreementInputField control={form.control} name="numberOfChildren" label="Number of Children" placeholder="e.g., two" className="inline-block w-auto" /> child/ren of the relationship, namely <AgreementTextField control={form.control} name="childrenNamesAndDOBs" label="Children Names and DOBs" placeholder="Names, dob" rows={1} />.</p>
               <p>The parties agree, in accordance with section 11 (1)(b) of the Mediation Act 2017 "The Act", that they intend these mediated terms to be legally binding upon each of them. The parties also acknowledge that in accordance with section 8 (2)(d) of the Act that they have been advised by the mediators to seek legal advice before signing this Agreement, and in accordance with section 202(2)(a)(ii) of the Civil Partnership and Certain Rights and Obligations of Cohabitants Act 2010 have agreed to waive the right to independent legal advice and have received legal advice separately and hereby covenant and agree with each other as follows:</p>
               <p>It is agreed that; This Agreement is deemed to be a valid agreement in accordance with section 202 of the 2010 Act as;</p>
@@ -404,22 +408,39 @@ const CohabitingAgreement: React.FC = () => {
             </AgreementSection>
 
             <AgreementSection title="Executed by; Parties;">
-              <p>Having read this AGREEMENT, and agreeing to its terms and conditions, and acting in good faith without coercion, duress, or undue influence of any kind, and having availed of the opportunity to seek independent legal advice, we the undersigned, lay our Hands and Seals upon this AGREEMENT, giving our consent and pledge to abide by this Agreement at all times henceforth. This agreement shall be governed by the laws of Ireland, and any part of which is determined to be contrary to such laws, shall not invalidate the remainder of this Agreement.</p>
-              <p>Party A <AgreementInputField control={form.control} name="partyASignatureName" label="Party A Signature Name" placeholder="Party A Signature Name" /></p>
-              <p>Date : <AgreementInputField control={form.control} name="partyASignatureDate" label="Party A Signature Date" type="date" /></p>
-              <p>Party B. <AgreementInputField control={form.control} name="partyBSignatureName" label="Party B Signature Name" placeholder="Party B Signature Name" /></p>
-              <p>Date : <AgreementInputField control={form.control} name="partyBSignatureDate" label="Party B Signature Date" type="date" /></p>
-              <p>Signed by <AgreementInputField control={form.control} name="mediatorSignatureName" label="Mediator Signature Name" placeholder="Mediator Signature Name" /> Date <AgreementInputField control={form.control} name="mediatorSignatureDate" label="Mediator Signature Date" type="date" /></p>
-              <p>Family Mediator on behalf of Professional Mediation Services for Families Ireland Limited</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Party A Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">Party A</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"> {/* Signature Line */} </div>
+                        <AgreementInputField control={form.control} name="partyASignatureName" label="Name (Party A)" placeholder="Party A Printed Name" />
+                        <AgreementInputField control={form.control} name="partyASignatureDate" label="Date" type="date" />
+                    </div>
+                    {/* Party B Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">Party B</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"> {/* Signature Line */} </div>
+                        <AgreementInputField control={form.control} name="partyBSignatureName" label="Name (Party B)" placeholder="Party B Printed Name" />
+                        <AgreementInputField control={form.control} name="partyBSignatureDate" label="Date" type="date" />
+                    </div>
+                    {/* Mediator Signature */}
+                    <div className="space-y-2 border p-4 rounded-md text-center">
+                        <FormLabel className="font-semibold">Mediator</FormLabel>
+                        <div className="h-12 border-b w-3/4 mx-auto mt-4 mb-2"> {/* Signature Line */} </div>
+                        <AgreementInputField control={form.control} name="mediatorSignatureName" label="Name (Mediator)" placeholder="Mediator Printed Name" />
+                        <AgreementInputField control={form.control} name="mediatorSignatureDate" label="Date" type="date" />
+                        <FormDescription className="text-xs">Family Mediator on behalf of Professional Mediation Services for Families Ireland Limited</FormDescription>
+                    </div>
+                </div>
             </AgreementSection>
 
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 mt-10 pt-6 border-t">
-              <Button id="save-agreement-button" type="submit" variant="default" size="lg" className="w-full sm:w-auto">
-                Save Agreement Data
-              </Button>
-              <Button id="download-pdf-button" type="button" variant="outline" size="lg" onClick={handleDownloadPdf} className="w-full sm:w-auto">
-                Download as PDF
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-10">
+                <Button type="submit" size="lg" id="save-agreement-button">
+                    <FileText className="mr-2 h-5 w-5" /> Save Agreement Data
+                </Button>
+                <Button type="button" size="lg" onClick={handleDownloadPdf} variant="outline" id="download-pdf-button">
+                    <Download className="mr-2 h-5 w-5" /> Download as PDF
+                </Button>
             </div>
           </form>
         </Form>
@@ -427,5 +448,3 @@ const CohabitingAgreement: React.FC = () => {
     </Layout>
   );
 };
-
-export default CohabitingAgreement;
