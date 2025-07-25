@@ -5,9 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Inbox, Send, Archive, Trash, Edit } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { CreateEmailDialog } from "@/components/dialogs/create-email";
 
 export default function Email() {
   const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
   
   // Helper for icon size - matching Settings.tsx
   const iconSizeClass = isMobile ? "h-3.5 w-3.5" : "h-4 w-4";
@@ -22,10 +28,7 @@ export default function Email() {
               Manage and organize your emails
             </p>
           </div>
-          <Button size={isMobile ? "sm" : "default"} className="flex items-center gap-2 self-start">
-            <Edit className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
-            {isMobile ? "New" : "Compose"}
-          </Button>
+          <CreateEmailDialog />
         </div>
         
         <Card className="h-[calc(100vh-200px)] flex flex-col overflow-hidden">

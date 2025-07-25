@@ -22,9 +22,10 @@ import { getAllItems, addItem } from "@/services/localDbService";
 interface CreateNoteDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onNoteCreated: (note: Note) => void; // Add this prop
 }
 
-export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
+export function CreateNoteDialog({ isOpen, onClose, onNoteCreated }: CreateNoteDialogProps) {
   const [matters, setMatters] = useState<Matter[]>([]);
   const [isLoadingMatters, setIsLoadingMatters] = useState(true);
   const [formData, setFormData] = useState({
@@ -85,6 +86,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
 
     try {
       await addItem('notes', noteData);
+      onNoteCreated(noteData); // Call the new prop with the created note
       toast({
         title: "Note created",
         description: `"${noteData.title}" has been added to your notes.`,

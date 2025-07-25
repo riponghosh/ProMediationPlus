@@ -15,6 +15,72 @@ _**Assistant**_
 
 ````
 
+````
+
+````
+I have updated the `Contacts.tsx` file to remove the "Solicitor" and "General" tabs and their corresponding counts. I also updated the `create-contact-dialog.tsx` file to remove the "Solicitor" and "General" options from the contact type dropdown.
+
+---
+
+_**User**_
+
+Now in edit contact i need Link to Case to not be shown when the contact type is enquiry
+
+---
+
+_**Assistant**_
+
+I understand. To achieve this, I need to modify the `EditContactDialog` component. I will add a conditional rendering for the "Link to Case" `FormField` based on the `contact.type` prop.
+
+First, I need to read the `edit-contact-dialog.tsx` file to understand its structure and identify the relevant section to modify. The `EditContactDialog` component needs to conditionally render the `linkedCaseFileNumber` field. I will add a state variable to track the selected contact type and use it to control the visibility of the `linkedCaseFileNumber` `FormField`. I will also need to fetch the case file numbers when the dialog opens. 
+````
+
+````
+I have updated the `edit-contact-dialog.tsx` file.
+
+Here's what I've done:
+1.  Imported `useEffect` and `getAllCaseFileNumbers`.
+2.  Added a `caseFileNumbers` state to store the available case file numbers.
+3.  Added a `useEffect` hook to fetch `caseFileNumbers` when the dialog opens.
+4.  Modified the `Select` component for `contact.type` to update the form's `type` value.
+5.  Conditionally rendered the `linkedCaseFileNumber` `FormField` only when the `contact.type` is *not* "New Enquiry".
+6.  Adjusted the `onValueChange` for `linkedCaseFileNumber` to set `undefined` when "__NONE__" is selected.
+7.  Changed the submit button text from "Create Contact" to "Save Changes" and "Creating..." to "Saving...".
+
+---
+
+_**User**_
+
+I need the same function in add contact dialog
+
+---
+
+_**Assistant**_
+
+I understand. I will apply the same conditional rendering logic for the "Link to Case" field in the `CreateContactDialog` component, based on the selected contact type.
+
+First, I need to read the `create-contact-dialog.tsx` file to understand its structure and identify the relevant section to modify. 
+````
+
+````
+I have updated the `create-contact-dialog.tsx` file to include the conditional rendering for the "Link to Case" field.
+
+Here's what I've done:
+1.  Modified the `Select` component for `contact.type` to update the form's `type` value.
+2.  Conditionally rendered the `linkedCaseFileNumber` `FormField` only when the `contact.type` is *not* "New Enquiry".
+3.  Adjusted the `onValueChange` for `linkedCaseFileNumber` to set `undefined` when "__NONE__" is selected.
+
+---
+
+_**User**_
+
+Push to github. New branch. Contacts-Updated
+
+---
+
+_**Assistant**_
+
+I have pushed the changes to a new branch named `Contacts-Updated` on GitHub.
 
 ---
 

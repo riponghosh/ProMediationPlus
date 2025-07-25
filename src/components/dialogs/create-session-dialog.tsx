@@ -37,6 +37,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getAllCaseFileNumbers } from "@/services/localDbService"; // Import the service
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Session title is required" }),
@@ -49,6 +50,7 @@ const formSchema = z.object({
     required_error: "Session type is required",
   }),
   notes: z.string().optional(),
+  linkedCaseFileNumber: z.string().optional(), // Add linkedCaseFileNumber to the schema
 });
 
 interface CreateSessionDialogProps {
@@ -60,6 +62,7 @@ interface CreateSessionDialogProps {
 
 export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession }: CreateSessionDialogProps) {
   const isMobile = useIsMobile();
+  const [caseFileNumbers, setCaseFileNumbers] = useState<string[]>([]); // State for case file numbers
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,6 +73,7 @@ export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession
       endTime: "10:00",
       sessionType: "Meeting",
       notes: "",
+      linkedCaseFileNumber: undefined, // Set default value
     },
   });
 
@@ -82,7 +86,22 @@ export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession
         endTime: "10:00",
         sessionType: "Meeting",
         notes: "",
+        linkedCaseFileNumber: undefined,
       });
+      const fetchCaseFiles = async () => {
+        try {
+          const numbers = await getAllCaseFileNumbers();
+          setCaseFileNumbers(numbers);
+        } catch (error) {
+          console.error("Failed to fetch case file numbers:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load case file numbers for selection.",
+            variant: "destructive",
+          });
+        }
+      };
+      fetchCaseFiles();
     }
   }, [isOpen, initialDate, form]);
 
@@ -122,6 +141,7 @@ export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession
         endTime: data.endTime,
         sessionType: data.sessionType,
         notes: data.notes,
+        linkedCaseFileNumber: data.linkedCaseFileNumber === "__NONE__" ? undefined : data.linkedCaseFileNumber, // Pass linkedCaseFileNumber
       });
       toast({
         title: "Session scheduled",
@@ -291,6 +311,32 @@ export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="linkedCaseFileNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link to Case (Optional)</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(value === "__NONE__" ? undefined : value)} value={field.value || "__NONE__"}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a case to link" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__NONE__">None</SelectItem>
+                      {caseFileNumbers.map((cfn) => (
+                        <SelectItem key={cfn} value={cfn}>
+                          {cfn}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

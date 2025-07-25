@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Search, Plus, Clock, Filter } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { CreateNoteDialog } from "@/components/dialogs/create-note-dialog";
+import { Note } from "@/types/models";
 
 // Local definition for Matter if not properly imported
 interface Matter {
@@ -79,6 +81,7 @@ const NotesPage = () => {
 	const { id: caseIdFromParams } = useParams<{ id: string }>();
 	const location = useLocation();
 	const navigate = useNavigate();
+	const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
 
 	useEffect(() => {
 		const loadMatters = async () => {
@@ -138,6 +141,24 @@ const NotesPage = () => {
 			routeState.caseId = caseIdFromParams;
 		}
 		navigate("/notes/new", { state: routeState });
+	};
+
+	const handleNoteCreated = (newNote: Note) => {
+		// Assuming the Note type from models.ts has the necessary fields
+		// You might need to adjust this if your Note type is different from the mock data
+		setAllNotes((prev) => [
+			{
+				id: newNote.id,
+				title: newNote.title,
+				case: matters.find(m => m.caseFileNumber === newNote.caseFileNumber)?.caseFileName || newNote.caseFileNumber, // Find case name or use file number
+				caseFileNumber: newNote.caseFileNumber,
+				date: newNote.createdAt.toISOString(),
+				category: "general", // Or infer from note content/tags if possible
+				excerpt: newNote.content.substring(0, 100) + (newNote.content.length > 100 ? "..." : ""),
+			}, 
+			...prev
+		]);
+		// Toast is already handled by the dialog
 	};
 
 	const filteredNotes = allNotes.filter((note) => {
@@ -204,14 +225,14 @@ const NotesPage = () => {
 	const renderEmptyState = (categoryForEmptyState = "") => {
 		let messageText = "No notes found";
 		let createButtonText = "Create Note";
-		let createNotePath = "/notes/new";
-		let createNoteQuery = "";
+		// let createNotePath = "/notes/new"; // No longer needed as we open dialog
+		// let createNoteQuery = ""; // No longer needed as we open dialog
 
 		if (caseIdFromParams) {
 			const currentCase = matters.find((m) => m.id === caseIdFromParams);
 			messageText = `No notes found for case ${currentCase?.caseFileName || caseIdFromParams}`;
 			createButtonText = "Create Note for this Case";
-			createNoteQuery = `?caseId=${caseIdFromParams}`;
+			// createNoteQuery = `?caseId=${caseIdFromParams}`; // No longer needed
 		} else if (categoryForEmptyState && categoryForEmptyState !== "all") {
 			messageText = `No ${categoryForEmptyState} notes found`;
 			createButtonText = `Create ${categoryForEmptyState} Note`;
@@ -227,11 +248,9 @@ const NotesPage = () => {
 				<h3 className="font-medium">{messageText}</h3>
 				<p className="text-sm mt-1">{subMessageText}</p>
 				{!searchTerm && (
-					<Button className="mt-4" asChild>
-						<Link to={{ pathname: createNotePath, search: createNoteQuery }}>
-							<Plus className="mr-2 h-4 w-4" />
-							{createButtonText}
-						</Link>
+					<Button className="mt-4" onClick={() => setIsCreateNoteDialogOpen(true)}> {/* Open dialog on click */}
+						<Plus className="mr-2 h-4 w-4" />
+						{createButtonText}
 					</Button>
 				)}
 			</div>
@@ -246,8 +265,8 @@ const NotesPage = () => {
 		? "View and manage notes for this specific case."
 		: "Create, view, and manage your mediation notes.";
 
-	const newNoteLinkPath = "/notes/new";
-	const newNoteLinkSearch = caseIdFromParams ? `?caseId=${caseIdFromParams}` : "";
+	// const newNoteLinkPath = "/notes/new"; // No longer needed
+	// const newNoteLinkSearch = caseIdFromParams ? `?caseId=${caseIdFromParams}` : ""; // No longer needed
 
 	return (
 		<Layout>
@@ -258,10 +277,11 @@ const NotesPage = () => {
 						<p className="text-muted-foreground">{pageDescription}</p>
 					</div>
 					<Button asChild className="flex gap-2">
-						<Link to={{ pathname: newNoteLinkPath, search: newNoteLinkSearch }}>
+						{/* Replace Link with a button that opens the dialog */}
+						<Button onClick={() => setIsCreateNoteDialogOpen(true)}>
 							<Plus className="h-4 w-4" />
 							New Note
-						</Link>
+						</Button>
 					</Button>
 				</div>
 
@@ -354,6 +374,11 @@ const NotesPage = () => {
 					</CardContent>
 				</Card>
 			</div>
+			<CreateNoteDialog
+				isOpen={isCreateNoteDialogOpen}
+				onClose={() => setIsCreateNoteDialogOpen(false)}
+				onNoteCreated={handleNoteCreated}
+			/>
 		</Layout>
 	);
 };
