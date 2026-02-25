@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword, signInWithPopup, OAuthProvider, onAuthStateChanged, Auth } from "firebase/auth"; // Import Auth type
+// import { signInWithEmailAndPassword, signInWithPopup, OAuthProvider, onAuthStateChanged, Auth } from "firebase/auth"; 
 // Assuming your main project has a Firebase setup file at src/firebase.ts
 // import { auth, googleProvider, microsoftProvider } from '../firebase'; // Adjust path if needed
 
 // Mock Firebase auth and providers for now if you haven't integrated them yet
-const mockAuth = {} as Auth; // Replace with your actual Firebase auth instance
+// const mockAuth = {} as Auth; // Replace with your actual Firebase auth instance
 const mockGoogleProvider = {} as any; // Replace with your actual GoogleAuthProvider instance
 const mockMicrosoftProvider = {} as any; // Replace with your actual OAuthProvider instance
 
-const auth = mockAuth; // Use your actual auth instance
+// const auth = mockAuth; // Use your actual auth instance
 const googleProvider = mockGoogleProvider; // Use your actual provider
 const microsoftProvider = mockMicrosoftProvider; // Use your actual provider
 
@@ -22,10 +22,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner"; // Using sonner for consistency
-import { ArrowRight, Mail, Lock, Google, Microsoft } from "lucide-react"; // Added icons
+import { ArrowRight, Mail, Lock } from "lucide-react"; // Added icons
 import { useForm } from "react-hook-form"; // Added react-hook-form
 import { zodResolver } from "@hookform/resolvers/zod"; // Added zod resolver
 import { z } from "zod"; // Added zod
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { loginUser } from "@/api/authServices";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define a schema for form validation
 const formSchema = z.object({
@@ -39,6 +42,7 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null); // Added type annotation
   const [loading, setLoading] = useState<boolean>(false); // Added type annotation
   const navigate = useNavigate();
+  const { setUser } = useAuth(); // Get setUser from AuthContext
 
   // Use react-hook-form for form handling
   const form = useForm<FormValues>({
@@ -54,41 +58,49 @@ const Login = () => {
   const password = form.watch("password");
 
 
-  useEffect(() => {
-    // Ensure auth is initialized before setting up listener
-    if (!auth || Object.keys(auth).length === 0) {
-        console.warn("Firebase Auth not initialized. Skipping auth state listener.");
-        return;
-    }
+  // useEffect(() => {
+  //   if (!auth || Object.keys(auth).length === 0) {
+  //       console.warn("Firebase Auth not initialized. Skipping auth state listener.");
+  //       return;
+  //   }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in, redirect to main app or dashboard
-        console.log("User is signed in:", user);
-        // TODO: You might want to fetch additional user data from your database here
-        navigate('/');
-      } else {
-        console.log("User is signed out.");
-      }
-    });
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     if (user) {
+  //       // User is signed in, redirect to main app or dashboard
+  //       console.log("User is signed in:", user);
+  //       // TODO: You might want to fetch additional user data from your database here
+  //       navigate('/');
+  //     } else {
+  //       console.log("User is signed out.");
+  //     }
+  //   });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [navigate]); // Added auth to dependency array if it's a state or prop
+  //   return () => unsubscribe();
+  // }, [navigate]); 
 
   const handleLogin = async (values: FormValues) => { // Use values from react-hook-form
     setError(null);
     setLoading(true);
 
     try {
-      // Ensure auth is initialized
-      if (!auth || Object.keys(auth).length === 0) {
-          throw new Error("Firebase Auth is not initialized.");
+      const response = await loginUser({
+        email: values.email,
+        password: values.password,
+      });
+
+      // setUser
+      sessionStorage.setItem("user", JSON.stringify(response.data.user));
+      
+      // save token in localStorage or context  
+      if (response && response.data.token) {
+        sessionStorage.setItem("token", response.data.token);
       }
-      await signInWithEmailAndPassword(auth, values.email, values.password); // Use values.email and values.password
-      console.log("User logged in successfully");
+      
+
+      // console.log("User logged in successfully", );
       toast.success("Logged in successfully!"); // Using sonner toast
       // Navigation is handled by the useEffect
+      navigate('/');
     } catch (error: any) { // Added type annotation for error
       console.error("Login error:", error);
       setError("Failed to log in. " + (error.message || ""));
@@ -98,78 +110,78 @@ const Login = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setLoading(true);
+  // const handleGoogleSignIn = async () => {
+  //   setError(null);
+  //   setLoading(true);
 
-    try {
-       // Ensure auth and provider are initialized
-       if (!auth || Object.keys(auth).length === 0 || !googleProvider || Object.keys(googleProvider).length === 0) {
-           throw new Error("Firebase Auth or Google Provider is not initialized.");
-       }
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("User logged in with Google successfully");
-      const user = result.user;
-      // Store user info if needed (consider using a context or state management instead of localStorage)
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: 'google'
-      }));
-      toast.success("Logged in with Google!"); // Using sonner toast
-      // Navigation is handled by the useEffect
-    } catch (error: any) { // Added type annotation for error
-      console.error("Google Sign-In Error:", error);
-      setError("Failed to sign in with Google. " + (error.message || ""));
-      toast.error("Google Sign-In failed."); // Using sonner toast
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   try {
+  //      // Ensure auth and provider are initialized
+  //      if (!auth || Object.keys(auth).length === 0 || !googleProvider || Object.keys(googleProvider).length === 0) {
+  //          throw new Error("Firebase Auth or Google Provider is not initialized.");
+  //      }
+  //     const result = await signInWithPopup(auth, googleProvider);
+  //     console.log("User logged in with Google successfully");
+  //     const user = result.user;
+  //     // Store user info if needed (consider using a context or state management instead of localStorage)
+  //     localStorage.setItem('user', JSON.stringify({
+  //       uid: user.uid,
+  //       email: user.email,
+  //       displayName: user.displayName,
+  //       photoURL: user.photoURL,
+  //       authProvider: 'google'
+  //     }));
+  //     toast.success("Logged in with Google!"); // Using sonner toast
+  //     // Navigation is handled by the useEffect
+  //   } catch (error: any) { // Added type annotation for error
+  //     console.error("Google Sign-In Error:", error);
+  //     setError("Failed to sign in with Google. " + (error.message || ""));
+  //     toast.error("Google Sign-In failed."); // Using sonner toast
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const handleMicrosoftSignIn = async () => {
-    setError(null);
-    setLoading(true);
+  // const handleMicrosoftSignIn = async () => {
+  //   setError(null);
+  //   setLoading(true);
 
-    try {
-       // Ensure auth and provider are initialized
-       if (!auth || Object.keys(auth).length === 0 || !microsoftProvider || Object.keys(microsoftProvider).length === 0) {
-           throw new Error("Firebase Auth or Microsoft Provider is not initialized.");
-       }
-      const result = await signInWithPopup(auth, microsoftProvider);
-      console.log("User logged in with Microsoft successfully");
+  //   try {
+  //      // Ensure auth and provider are initialized
+  //      if (!auth || Object.keys(auth).length === 0 || !microsoftProvider || Object.keys(microsoftProvider).length === 0) {
+  //          throw new Error("Firebase Auth or Microsoft Provider is not initialized.");
+  //      }
+  //     const result = await signInWithPopup(auth, microsoftProvider);
+  //     console.log("User logged in with Microsoft successfully");
 
-      // Get Microsoft access token for later use with MS Graph API
-      const credential = OAuthProvider.credentialFromResult(result);
-      const accessToken = credential?.accessToken; // Use optional chaining
+  //     // Get Microsoft access token for later use with MS Graph API
+  //     const credential = OAuthProvider.credentialFromResult(result);
+  //     const accessToken = credential?.accessToken; // Use optional chaining
 
-      if (accessToken) {
-         // Store the token for later use with MS Graph API for emails
-         localStorage.setItem('msAccessToken', accessToken);
-      }
+  //     if (accessToken) {
+  //        // Store the token for later use with MS Graph API for emails
+  //        localStorage.setItem('msAccessToken', accessToken);
+  //     }
 
 
-      const user = result.user;
-      // Store user info if needed (consider using a context or state management instead of localStorage)
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: 'microsoft'
-      }));
-      toast.success("Logged in with Microsoft!"); // Using sonner toast
-      // Navigation is handled by the useEffect
-    } catch (error: any) { // Added type annotation for error
-      console.error("Microsoft Sign-In Error:", error);
-      setError("Failed to sign in with Microsoft. " + (error.message || ""));
-      toast.error("Microsoft Sign-In failed."); // Using sonner toast
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     const user = result.user;
+  //     // Store user info if needed (consider using a context or state management instead of localStorage)
+  //     localStorage.setItem('user', JSON.stringify({
+  //       uid: user.uid,
+  //       email: user.email,
+  //       displayName: user.displayName,
+  //       photoURL: user.photoURL,
+  //       authProvider: 'microsoft'
+  //     }));
+  //     toast.success("Logged in with Microsoft!"); // Using sonner toast
+  //     // Navigation is handled by the useEffect
+  //   } catch (error: any) { // Added type annotation for error
+  //     console.error("Microsoft Sign-In Error:", error);
+  //     setError("Failed to sign in with Microsoft. " + (error.message || ""));
+  //     toast.error("Microsoft Sign-In failed."); // Using sonner toast
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4"> {/* Using Tailwind classes */}
@@ -225,9 +237,9 @@ const Login = () => {
                 )}
               />
 
-              <Link to="/forgotemail" className="text-sm text-primary hover:underline block text-right"> {/* Styled Forgot Email link */}
+              {/* <Link to="/forgotemail" className="text-sm text-primary hover:underline block text-right">
                 Forgot email?
-              </Link>
+              </Link> */}
               <Link to="/password-reset" className="text-sm text-primary hover:underline block text-right"> {/* Styled Forgot Password link */}
                 Forgot password?
               </Link>
@@ -237,28 +249,28 @@ const Login = () => {
               </Button>
 
               {/* Social Login Buttons */}
-              <div className="space-y-2 mt-4"> {/* Added spacing */}
+              {/* <div className="space-y-2 mt-4"> 
                  <Button
                    type="button"
                    onClick={handleGoogleSignIn}
-                   className="w-full flex items-center justify-center gap-2" // Styled button
-                   variant="outline" // Use outline variant
+                   className="w-full flex items-center justify-center gap-2" 
+                   variant="outline" 
                    disabled={loading}
                  >
-                   <Google className="h-5 w-5" /> {/* Added icon */}
+                   <Google className="h-5 w-5" /> Added icon
                    Sign in with Google
                  </Button>
                  <Button
                    type="button"
                    onClick={handleMicrosoftSignIn}
-                   className="w-full flex items-center justify-center gap-2" // Styled button
-                   variant="outline" // Use outline variant
+                   className="w-full flex items-center justify-center gap-2" 
+                   variant="outline" 
                    disabled={loading}
                  >
-                   <Microsoft className="h-5 w-5" /> {/* Added icon */}
+                   <Microsoft className="h-5 w-5" /> Added icon
                    Sign in with Microsoft
                  </Button>
-              </div>
+              </div> */}
             </form>
           </Form>
 

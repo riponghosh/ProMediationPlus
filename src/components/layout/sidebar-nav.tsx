@@ -26,11 +26,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { s } from "node_modules/framer-motion/dist/types.d-DDSxwf0n";
 
 export type NavItem = {
   title: string;
   href: string;
   icon: React.ElementType;
+  roles?: ("Administrator" | "Client" | "Mediator")[]; 
 };
 
 const navItems: NavItem[] = [
@@ -38,71 +41,85 @@ const navItems: NavItem[] = [
     title: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Case Files",
     href: "/case-files",
     icon: Briefcase,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Calendar",
     href: "/calendar",
     icon: Calendar,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Contacts",
     href: "/contacts",
     icon: Users,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Email",
     href: "/email",
     icon: Mail,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Tasks",
     href: "/tasks",
     icon: CheckSquare,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Storage",
     href: "/storage",
     icon: HardDrive,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Templates",
     href: "/templates",
     icon: FileOutput,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Forms",
     href: "/forms",
     icon: ClipboardCheck,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Guides",
     href: "/guides",
     icon: BookOpen,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Billing",
     href: "/billing",
     icon: CreditCard,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Reports",
     href: "/reports",
     icon: BarChart,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Settings",
     href: "/settings",
     icon: Settings,
+    roles: ["Administrator", "Client", "Mediator"],
   },
   {
     title: "Admin",
     href: "/admin",
     icon: ShieldCheck,
+    roles: ["Administrator"],
   },
 ];
 
@@ -112,6 +129,7 @@ export function SidebarNav() {
   const isCollapsed = isMobile;
   const [prevPath, setPrevPath] = useState(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const user = sessionStorage.getItem("user") ? JSON.parse(sessionStorage.getItem("user") || "{}") : null;
 
   // Auto collapse sidebar on navigation for mobile
   useEffect(() => {
@@ -127,6 +145,12 @@ export function SidebarNav() {
       setMobileMenuOpen(false);
     }
   }, [isMobile]);
+
+  // Filter nav items based on user role
+  const filteredNavItems = navItems.filter((item) =>
+    item.roles?.includes(user?.role || "")
+  );
+  
 
   return (
     <>
@@ -153,7 +177,7 @@ export function SidebarNav() {
           <Separator />
           <div className="flex-1 overflow-auto py-2">
             <nav className="grid gap-1 px-2">
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <Link
                   key={item.href}
                   to={item.href}
@@ -209,7 +233,7 @@ export function SidebarNav() {
             {/* Mobile navigation items - reduced vertical spacing */}
             <nav className="flex-1 overflow-y-auto p-4">
               <ul className="space-y-1">
-                {navItems.map((item) => (
+                {filteredNavItems.map((item) => (
                   <li key={item.href}>
                     <Link
                       to={item.href}

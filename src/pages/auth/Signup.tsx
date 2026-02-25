@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword, signInWithPopup, OAuthProvider, Auth } from "firebase/auth"; // Import Auth type
+import { Link, useNavigate } from "react-router-dom";
+// import { createUserWithEmailAndPassword, signInWithPopup, OAuthProvider, Auth } from "firebase/auth"; // Import Auth type
 // Assuming your main project has a Firebase setup file at src/firebase.ts
 // import { auth, googleProvider, microsoftProvider } from '../firebase'; // Adjust path if needed
 
 // Mock Firebase auth and providers for now if you haven't integrated them yet
-const mockAuth = {} as Auth; // Replace with your actual Firebase auth instance
+// const mockAuth = {} as Auth; // Replace with your actual Firebase auth instance
 const mockGoogleProvider = {} as any; // Replace with your actual GoogleAuthProvider instance
 const mockMicrosoftProvider = {} as any; // Replace with your actual OAuthProvider instance
 
-const auth = mockAuth; // Use your actual auth instance
+// const auth = mockAuth; // Use your actual auth instance
 const googleProvider = mockGoogleProvider; // Use your actual provider
 const microsoftProvider = mockMicrosoftProvider; // Use your actual provider
 
@@ -22,14 +22,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner"; // Using sonner for consistency
-import { ArrowRight, Google, Microsoft } from "lucide-react"; // Added icons
+import { ArrowRight} from "lucide-react"; // Added icons
 import { useForm } from "react-hook-form"; // Added react-hook-form
 import { zodResolver } from "@hookform/resolvers/zod"; // Added zod resolver
 import { z } from "zod"; // Added zod
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { registerUser } from "@/api/authServices";
 
 // Define a schema for form validation
 const formSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  fullName: z.string().min(2, "Name must be at least 2 characters").min(1, "Name is required"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -43,7 +46,9 @@ const Signup = () => {
   // Use react-hook-form for form handling
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    mode: "onBlur",
     defaultValues: {
+      fullName: "",
       email: "",
       password: "",
     },
@@ -54,23 +59,30 @@ const Signup = () => {
     setLoading(true);
 
     try {
+      await registerUser({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+      });
+        
+      // console.log('Attempting to sign up user with email:', values); 
        // Ensure auth is initialized
-       if (!auth || Object.keys(auth).length === 0) {
-           throw new Error("Firebase Auth is not initialized.");
-       }
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password); // Use values.email and values.password
-      console.log('User signed up successfully');
+      //  if (!auth || Object.keys(auth).length === 0) {
+      //      throw new Error("Firebase Auth is not initialized.");
+      //  }
+      // const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password); // Use values.email and values.password
+      // console.log('User signed up successfully');
 
       // Store user info if needed (consider using a context or state management instead of localStorage)
-      const user = userCredential.user;
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: 'email'
-      }));
-      toast.success("Signed up successfully!"); // Using sonner toast
+      // const user = userCredential.user;
+      // localStorage.setItem('user', JSON.stringify({
+      //   uid: user.uid,
+      //   email: user.email,
+      //   displayName: user.displayName,
+      //   photoURL: user.photoURL,
+      //   authProvider: 'email'
+      // }));
+      toast.success("Signed up successfully!"); 
 
       // Redirect to the main app or dashboard
       navigate('/');
@@ -78,83 +90,6 @@ const Signup = () => {
       setError("Failed to sign up. " + (error.message || ""));
       console.error('Signup error:', error);
       toast.error("Sign up failed. Please try again."); // Using sonner toast
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-       // Ensure auth and provider are initialized
-       if (!auth || Object.keys(auth).length === 0 || !googleProvider || Object.keys(googleProvider).length === 0) {
-           throw new Error("Firebase Auth or Google Provider is not initialized.");
-       }
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("User signed up with Google successfully");
-
-      const user = result.user;
-      // Store user info if needed (consider using a context or state management instead of localStorage)
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: 'google'
-      }));
-      toast.success("Signed up with Google!"); // Using sonner toast
-
-      // Redirect to main page
-      navigate('/');
-    } catch (error: any) { // Added type annotation for error
-      console.error("Google Sign-Up Error:", error);
-      setError("Failed to sign up with Google. " + (error.message || ""));
-      toast.error("Google Sign-Up failed."); // Using sonner toast
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMicrosoftSignUp = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-       // Ensure auth and provider are initialized
-       if (!auth || Object.keys(auth).length === 0 || !microsoftProvider || Object.keys(microsoftProvider).length === 0) {
-           throw new Error("Firebase Auth or Microsoft Provider is not initialized.");
-       }
-      const result = await signInWithPopup(auth, microsoftProvider);
-      console.log("User signed up with Microsoft successfully");
-
-      // Get Microsoft access token for later use with MS Graph API
-      const credential = OAuthProvider.credentialFromResult(result);
-      const accessToken = credential?.accessToken; // Use optional chaining
-
-      if (accessToken) {
-         // Store the token for later use with MS Graph API for emails
-         localStorage.setItem('msAccessToken', accessToken);
-      }
-
-      const user = result.user;
-      // Store user info if needed (consider using a context or state management instead of localStorage)
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: 'microsoft'
-      }));
-      toast.success("Signed up with Microsoft!"); // Using sonner toast
-
-      // Redirect to main page
-      navigate('/');
-    } catch (error: any) { // Added type annotation for error
-      console.error("Microsoft Sign-Up Error:", error);
-      setError("Failed to sign up with Microsoft. " + (error.message || ""));
-      toast.error("Microsoft Sign-Up failed."); // Using sonner toast
     } finally {
       setLoading(false);
     }
@@ -176,6 +111,25 @@ const Signup = () => {
           )}
           <Form {...form}> {/* Wrap form with FormProvider */}
             <form onSubmit={form.handleSubmit(handleSignup)} className="space-y-4"> {/* Use form.handleSubmit */}
+
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel> {/* Using FormLabel */}
+                    <FormControl>
+                      <Input
+                        placeholder="Full Name"
+                        {...field} // Bind form field props
+                        disabled={loading}
+                      />
+                    </FormControl>
+                    <FormMessage /> {/* Display validation errors */}
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -219,28 +173,29 @@ const Signup = () => {
               </Button>
 
               {/* Social Sign Up Buttons */}
-              <div className="space-y-2 mt-4"> {/* Added spacing */}
+              {/* <div className="space-y-2 mt-4"> 
                  <Button
                    type="button"
-                   onClick={handleGoogleSignUp}
-                   className="w-full flex items-center justify-center gap-2" // Styled button
-                   variant="outline" // Use outline variant
+                   className="w-full flex items-center justify-center gap-2" 
+                   variant="outline" 
                    disabled={loading}
                  >
-                   <Google className="h-5 w-5" /> {/* Added icon */}
+                   <Google className="h-5 w-5" /> 
+                   
                    Sign up with Google
                  </Button>
                  <Button
                    type="button"
                    onClick={handleMicrosoftSignUp}
-                   className="w-full flex items-center justify-center gap-2" // Styled button
-                   variant="outline" // Use outline variant
+                   className="w-full flex items-center justify-center gap-2" 
+                   variant="outline" 
                    disabled={loading}
                  >
-                   <Microsoft className="h-5 w-5" /> {/* Added icon */}
+                   <Microsoft className="h-5 w-5" /> 
+                   Added icon
                    Sign up with Microsoft
                  </Button>
-              </div>
+              </div> */}
             </form>
           </Form>
 

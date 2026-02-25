@@ -59,6 +59,7 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
   });
 
   function onSubmit(values: FormValues) {
+    console.log("Form submitted with values:", values);
     // Call the onSave prop with only the form values
     if (onSave) {
       onSave(values);
