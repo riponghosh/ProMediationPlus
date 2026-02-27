@@ -59,8 +59,6 @@ import { toast } from "@/components/ui/use-toast";
 import { createInvitation, createNewRole, getAllInvitations, getAllPermissions, getAllRoles, getAllUsers, resendInvitation, revokeInvitation, updateRole, updateUserProfile } from "@/api/AdminService";
 import { InvitationData, RoleData } from "@/api/interface";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { buildPermissionGroups, extractUniquePermissions } from "@/api/utils/rolePermissionService";
-
 // ================ USER MANAGEMENT DATA & FUNCTIONS ================ //
 
 // Mock user data for demonstration
@@ -310,6 +308,10 @@ export default function UserManagementPage() {
     user?.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
     user?.role?.name.toLowerCase().includes(userSearchTerm.toLowerCase())
   );
+  // User Langth Function
+  const getUserCount = (roleId: number) => {
+    return users.filter(user => user.roleId === roleId).length;
+  };
 
   // fetchRoles on component mount
   useEffect(() => {
@@ -381,6 +383,14 @@ const openEditModal = (user: any) => {
   });
   setIsEditOpen(true);
 };
+useEffect(() => {
+  if (isEditOpen && selectedUser) {
+    setEditData({
+      fullName: selectedUser.fullName || "",
+      roleId: selectedUser.roleId || ""
+    });
+  }
+}, [isEditOpen, selectedUser]);
   // Handle role edit
 const handleUpdateUser = async (userId: string) => {
   try {
@@ -1084,7 +1094,7 @@ const toggleEditPermission = (permissionId: number) => {
                             </div>
                             <Badge variant="outline" className="flex items-center text-[0.65rem] h-5">
                               <Users className="h-2.5 w-2.5 mr-0.5" />
-                              {role.count}
+                              {getUserCount(role.id)} users
                             </Badge>
                           </div>
                           
@@ -1127,7 +1137,7 @@ const toggleEditPermission = (permissionId: number) => {
                             <TableCell className="font-medium">{role.name}</TableCell>
                             <TableCell>{role.description}</TableCell>
                             <TableCell>
-                              <Badge variant="outline">{role.count} users</Badge>
+                              <Badge variant="outline">{getUserCount(role.id)} users</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
