@@ -27,8 +27,9 @@ import { useForm } from "react-hook-form"; // Added react-hook-form
 import { zodResolver } from "@hookform/resolvers/zod"; // Added zod resolver
 import { z } from "zod"; // Added zod
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { loginUser } from "@/api/authServices";
+import { forgotPassword, loginUser } from "@/api/authServices";
 import { useAuth } from "@/contexts/AuthContext";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Define a schema for form validation
 const formSchema = z.object({
@@ -43,6 +44,7 @@ const Login = () => {
   const [loading, setLoading] = useState<boolean>(false); // Added type annotation
   const navigate = useNavigate();
   const { setUser } = useAuth(); // Get setUser from AuthContext
+  const [isSending, setIsSending] = useState(false);
 
   // Use react-hook-form for form handling
   const form = useForm<FormValues>({
@@ -109,6 +111,22 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+const handleForgotPassword = async () => {
+  if (!email) {
+    return toast.error("Please enter your email address first!");
+  }
+
+  setIsSending(true);
+  try {
+    const response = await forgotPassword({ email });
+    toast.success(response.message || "Reset link sent! Please check your email.");
+  } catch (error: any) {
+    toast.error(error || "Failed to send reset link.");
+  } finally {
+    setIsSending(false);
+  }
+};
 
   // const handleGoogleSignIn = async () => {
   //   setError(null);
@@ -283,6 +301,7 @@ const Login = () => {
           </div>
         </CardContent>
       </Card>
+
     </div>
   );
 };

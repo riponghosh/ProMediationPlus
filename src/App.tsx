@@ -59,6 +59,9 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import VerifyEmail from "./pages/auth/VerifyEmail";
+import PasswordReset from "./pages/auth/PasswordReset";
+import SetNewPassword from "./pages/auth/SetNewPassword";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +78,13 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           {/* Sign up */}
           <Route path="/signup" element={<Signup />} />
+          {/* Email Verify */}
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          {/* Reset  */}
+          <Route path="/password-reset" element={<PasswordReset />} />
+          {/* Set New Password */}
+          <Route path="/reset-password" element={<SetNewPassword />} />
+          {/*  */}
           
           <Route path="/" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><Dashboard /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><CalendarPage /></ProtectedRoute>} />

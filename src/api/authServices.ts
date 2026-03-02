@@ -29,3 +29,25 @@ export const loginUser = async (data: LoginData) => {
     throw error.response?.data || error.message;
   }
 };
+
+interface ForgotPasswordData {
+  email: string;
+}
+
+export const forgotPassword = async (data: ForgotPasswordData) => {
+  try {
+    const response = await api.post("/api/v1/auth/forgot-password", data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || error.message;
+  }
+};
+
+export const resetPassword = async (data: { token: string; password: string }) => {
+  try {
+    const response = await api.post("/api/v1/auth/reset-password", data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data?.message || error.message;
+  }
+};
