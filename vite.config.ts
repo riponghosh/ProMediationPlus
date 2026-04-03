@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // Proxy requests starting with /api to the backend server
       '/api': {
-        target: 'http://localhost:3001', // Your backend server address
+        target: 'http://localhost:5000', // Your backend server address
         changeOrigin: true, // Recommended for virtual hosted sites
         // secure: false, // Uncomment if backend uses self-signed HTTPS cert
         // rewrite: (path) => path.replace(/^\/api/, ''), // Uncomment if backend doesn't expect /api prefix
