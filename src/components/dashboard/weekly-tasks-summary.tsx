@@ -9,7 +9,6 @@ import { Link } from "react-router-dom";
 const WeeklyTasksSummaryContent = () => {
   const { tasks } = useTasksContext();
   const isMobile = useIsMobile();
-  
   // Limit to 5 tasks for dashboard
   const filteredTasks = tasks.slice(0, 5);
 

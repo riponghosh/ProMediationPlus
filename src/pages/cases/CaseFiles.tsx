@@ -109,7 +109,6 @@ const initialCasesData: { [key: string]: CaseType } = {
     address: "",
   }
 };
-
 const CaseFilesPage = () => {
   const [cases, setCases] = useState<{ [key: string]: CaseType }>({}); // Use CaseType
   const [isLoading, setIsLoading] = useState(true);
