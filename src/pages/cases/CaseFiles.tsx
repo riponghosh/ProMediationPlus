@@ -25,6 +25,7 @@ import { Link } from "react-router-dom";
 import { getAllItems, putItem, deleteItem, getNotesForCase } from "@/services/localDbService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Case as CaseType } from "@/types/models"; // Import CaseType
+import { createCase, getCases } from "@/api/CaseServices";
 
 // Removed local Case interface, will use CaseType from models.ts
 
@@ -114,40 +115,47 @@ const CaseFilesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
-  // Load Cases from IndexedDB on initial render
-  useEffect(() => {
-    const loadCasesFromDb = async () => {
-      setIsLoading(true);
-      try {
-        const dbCasesArray = await getAllItems('cases'); 
-        if (dbCasesArray.length > 0) {
-          const casesObject = dbCasesArray.reduce((acc, currentCase) => {
-            acc[currentCase.id] = currentCase as CaseType; // Use CaseType
-            return acc;
-          }, {} as { [key: string]: CaseType });
-          setCases(casesObject);
-        } else {
-          const initialDataPromises = Object.values(initialCasesData).map(caseData =>
-            putItem('cases', caseData as CaseType) 
-          );
-          await Promise.all(initialDataPromises);
-          setCases(initialCasesData);
-        }
-      } catch (error) {
-        console.error('Error loading Cases from IndexedDB:', error);
-        toast.error("Failed to load Case files.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadCasesFromDb();
-  }, []);
+
 
   const [activeTab, setActiveTab] = useState("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [selectedCaseDetailId, setSelectedCaseDetailId] = useState<string | null>("Case-1"); 
   const [notes, setNotes] = useState<any[]>([]); // Assuming notes structure is flexible for now
+
+    // Load Cases from IndexedDB on initial render
+useEffect(() => {
+  const loadCases = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getCases({
+        page: 1,
+        limit: 10,
+        status: activeTab,
+        search: searchTerm,
+      });
+
+      // ⚠️ depends on your backend response structure
+      // assume: res.data = array
+      const casesArray = res.data || [];
+
+      const casesObject = casesArray.reduce((acc: any, item: CaseType) => {
+        acc[item.id] = item;
+        return acc;
+      }, {});
+
+      setCases(casesObject);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load cases");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  loadCases();
+}, [activeTab, searchTerm]);
 
   useEffect(() => {
     if (!selectedCaseDetailId) {
@@ -189,9 +197,9 @@ const CaseFilesPage = () => {
       currentCase.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       currentCase.caseFileNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (activeTab === "active") return matchesSearch && currentCase.status === "Active";
-    if (activeTab === "pending") return matchesSearch && currentCase.status === "Pending";
-    if (activeTab === "closed") return matchesSearch && currentCase.status === "Closed";
+    if (activeTab === "active") return matchesSearch && currentCase.status === "active";
+    if (activeTab === "pending") return matchesSearch && currentCase.status === "pending";
+    if (activeTab === "closed") return matchesSearch && currentCase.status === "closed";
 
     return false;
   });
@@ -300,36 +308,44 @@ const CaseFilesPage = () => {
   };
 
   // Updated to map CreateCaseDialog form values to CaseType
-  const handleCreateCase = async (formData: { title: string; type: string; clientName: string; caseFile: string; }) => {
-    try {
-      const newId = crypto.randomUUID();
-      const caseToAdd: CaseType = {
-        id: newId,
-        title: formData.title,
-        type: formData.type,
-        clientName: formData.clientName,
-        caseFileNumber: formData.caseFile, // Map from caseFile
-        caseFileName: `${formData.title.replace(/\s+/g, '_')}_CaseFile`, // Auto-generate caseFileName
-        status: "Active", // Default status
-        lastUpdated: new Date().toISOString(),
-        description: "", 
-        email: "", 
-        phone: "", 
-        address: "", 
-        parties: [], 
-        // documents, tasks, meetingNotes, nextSession, intakeForm are optional or can have defaults
-      };
-      await putItem('cases', caseToAdd);
-      setCases(prev => ({
-        ...prev,
-        [newId]: caseToAdd,
-      }));
-      toast.success("Case file created successfully");
-    } catch (error) {
-      console.error("Error creating Case in IndexedDB:", error);
-      toast.error("Failed to create Case file");
-    }
-  };
+ const handleCreateCase = async (formData: {
+  title: string;
+  type: string;
+  clientName: string;
+  caseFile: string;
+}) => {
+  try {
+    const payload = {
+      title: formData.title,
+      caseFileNumber: formData.caseFile,
+      type: formData.type,
+      clientName: formData.clientName,
+      description: "",
+      parties: [formData.clientName],
+      email: "",
+      phone: "",
+      address: "",
+      intakeForm: {},
+      caseFileName: formData.caseFile,
+    };
+
+    const res = await createCase(payload);
+
+    // ⚡ UI instantly update (optional but good UX)
+    const newCase = res.data;
+
+    setCases(prev => ({
+      ...prev,
+      [newCase.id]: newCase,
+    }));
+
+    toast.success("Case file created successfully");
+
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error?.message || "Failed to create case");
+  }
+};
 
   return (
     <Layout>
@@ -399,13 +415,13 @@ const CaseFilesPage = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full"> {/* Changed from grid grid-cols-3 */}
             <TabsTrigger value="active" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Active ({Object.values(cases).filter(c => c.status === "Active").length})
+              Active ({Object.values(cases).filter(c => c.status === "active").length})
             </TabsTrigger>
             <TabsTrigger value="pending" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Pending ({Object.values(cases).filter(c => c.status === "Pending").length})
+              Pending ({Object.values(cases).filter(c => c.status === "pending").length})
             </TabsTrigger>
             <TabsTrigger value="closed" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Closed ({Object.values(cases).filter(c => c.status === "Closed").length})
+              Closed ({Object.values(cases).filter(c => c.status === "closed").length})
             </TabsTrigger>
           </TabsList>
 

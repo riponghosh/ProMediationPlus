@@ -882,7 +882,7 @@ const toggleEditPermission = (permissionId: number) => {
                             
                             <div className="flex items-center gap-1.5 text-[0.7rem]">
                               <Clock className="h-2.5 w-2.5" />
-                              <span>{user?.lastActive}</span>
+                              <span>{user?.lastActive ? user?.lastActive : "No login recorded"}</span>
                             </div>
                           </div>
                           

@@ -140,3 +140,24 @@ export interface UpdateRoleData {
   description?: string;
   permissionIds?: number[];
 }
+
+export interface CreateCasePayload {
+  title: string;
+  caseFileNumber: string;
+  type: string;
+  clientName: string;
+  description?: string;
+  parties: string[];
+  email: string;
+  phone: string;
+  address: string;
+  intakeForm?: Record<string, any>;
+  caseFileName: string;
+}
+
+export interface GetCasesParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}

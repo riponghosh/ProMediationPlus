@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createCase } from "@/api/CaseServices";
 
 const formSchema = z.object({
   title: z.string().min(2, "Case title is required"),
@@ -34,6 +35,7 @@ interface CreateCaseDialogProps {
 export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false }: CreateCaseDialogProps) {
   // Use local state for internal control
   const [localOpen, setLocalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Use external state if provided, otherwise use local state
   const dialogOpen = isOpen !== undefined ? isOpen : localOpen;
@@ -58,20 +60,42 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
     },
   });
 
-  function onSubmit(values: FormValues) {
-    console.log("Form submitted with values:", values);
-    // Call the onSave prop with only the form values
+async function onSubmit(values: FormValues) {
+  try {
+    setLoading(true);
+
+    const payload = {
+      title: values.title,
+      caseFileNumber: values.caseFile,
+      type: values.type,
+      clientName: values.clientName,
+      description: "",
+      parties: [values.clientName], // optional for now
+      email: "",
+      phone: "",
+      address: "",
+      intakeForm: {},
+      caseFileName: values.caseFile,
+    };
+
+    const res = await createCase(payload);
+
+    toast.success("Case created successfully");
+
     if (onSave) {
       onSave(values);
-    } else {
-      // Default behavior if no onSave is provided
-      toast.success("Case created successfully");
     }
-    
-    // Reset form and close dialog
+
     form.reset();
     handleOpenChange(false);
+
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error?.message || "Failed to create case");
+  } finally {
+    setLoading(false);
   }
+}
 
   // Content of the dialog
   const dialogContent = (
@@ -170,7 +194,9 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Case</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Creating..." : "Create Case"}
+            </Button>
           </DialogFooter>
         </form>
       </Form>
