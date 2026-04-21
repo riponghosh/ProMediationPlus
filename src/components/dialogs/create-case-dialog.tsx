@@ -3,13 +3,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCase } from "@/api/CaseServices";
+import { createCase, getCases } from "@/api/CaseServices";
+
+// Function to check if case file number already exists
+const checkCaseFileUniqueness = async (caseFile: string) => {
+  try {
+    const res = await getCases({
+      page: 1,
+      limit: 1000,
+    });
+    const casesArray = res.data || [];
+    const exists = casesArray.some((c: any) => c.caseFileNumber === caseFile);
+    return !exists;
+  } catch (error) {
+    console.error("Error checking case file uniqueness:", error);
+    return true; // Allow submission if check fails
+  }
+};
 
 const formSchema = z.object({
   title: z.string().min(2, "Case title is required"),
@@ -17,7 +34,15 @@ const formSchema = z.object({
   clientName: z.string().min(2, "Client name is required"),
   caseFile: z.string()
     .min(9, "Case file must be in format CF-XXXXXX")
-    .regex(/^CF-\d{6}$/, "Must be in format CF-XXXXXX"),
+    .regex(/^CF-\d{6}$/, "Must be in format CF-XXXXXX")
+    .refine(
+      async (caseFile) => await checkCaseFileUniqueness(caseFile),
+      "Case File Number already exists"
+    ),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
+  description: z.string().optional().default(""),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -30,9 +55,11 @@ interface CreateCaseDialogProps {
   onClose?: () => void;
   // Control whether to show the trigger button
   showTrigger?: boolean;
+  // New prop to refresh case list after creation
+  loadCases?: () => void;
 }
 
-export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false }: CreateCaseDialogProps) {
+export function CreateCaseDialog({ onSave,loadCases, isOpen, onClose, showTrigger = false }: CreateCaseDialogProps) {
   // Use local state for internal control
   const [localOpen, setLocalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,6 +84,10 @@ export function CreateCaseDialog({ onSave, isOpen, onClose, showTrigger = false 
       type: "Divorce Mediation",
       clientName: "",
       caseFile: "CF-",
+      email: "",
+      phone: "",
+      address: "",
+      description: "",
     },
   });
 
@@ -69,38 +100,44 @@ async function onSubmit(values: FormValues) {
       caseFileNumber: values.caseFile,
       type: values.type,
       clientName: values.clientName,
-      description: "",
-      parties: [values.clientName], // optional for now
-      email: "",
-      phone: "",
-      address: "",
+      description: values.description || "",
+      parties: [values.clientName],
+      email: values.email,
+      phone: values.phone,
+      address: values.address,
       intakeForm: {},
       caseFileName: values.caseFile,
     };
 
     const res = await createCase(payload);
 
-    toast.success("Case created successfully");
-
-    if (onSave) {
-      onSave(values);
+    if (res?.success) {
+      toast.success("Case created successfully");
+      loadCases(); // Refresh the case list after creation
+      if (onSave) onSave(values);
+      form.reset();
+      handleOpenChange(false);
+      return; 
     }
 
-    form.reset();
-    handleOpenChange(false);
+    const manualError = res?.errors?.[0]?.message || res?.message;
+    if (manualError) {
+      toast.error(manualError);
+    }
 
   } catch (error: any) {
+    console.error("Error creating case:", error);
     console.error(error);
-    toast.error(error?.message || "Failed to create case");
   } finally {
     setLoading(false);
   }
 }
 
+
   // Content of the dialog
   const dialogContent = (
     <DialogContent 
-      className="sm:max-w-[425px] mx-auto w-[calc(100%-2rem)]"
+      className="sm:max-w-[425px] mx-auto w-[calc(100%-2rem)] max-h-[80vh] overflow-y-auto"
       onOpenAutoFocus={(event) => event.preventDefault()}
     >
       <DialogHeader>
@@ -189,15 +226,69 @@ async function onSubmit(values: FormValues) {
               </FormItem>
             )}
           />
-          
-          <DialogFooter>
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="client@example.com" type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl>
+                  <Input placeholder="(123) 456-7890" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="123 Main St, City, State, ZIP" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Enter case description..." {...field} className="resize-none" rows={4} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create Case"}
             </Button>
-          </DialogFooter>
         </form>
       </Form>
     </DialogContent>

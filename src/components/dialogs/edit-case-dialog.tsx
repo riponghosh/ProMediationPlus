@@ -11,27 +11,9 @@ import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Case as CaseType } from "@/types/models"; // Import Case as CaseType
+import { updateCase } from "@/api/CaseServices";
+import { UpdateCasePayload } from "@/api/interface";
 
-// Define Case interface consistent with other components
-// Ideally, move this to a shared types file (e.g., src/types/case.ts)
-// interface Case {
-//   id: string;
-//   title: string;
-//   type: string;
-//   status: string;
-//   lastUpdated: string;
-//   clientName: string;
-//   description?: string; // Make optional consistent with schema
-//   caseFileNumber: string;
-//   caseFileName: string;
-//   // Add other fields from the shared definition if needed by the form
-//   participants?: string[];
-//   documents?: any[];
-//   tasks?: any[];
-//   meetingNotes?: any[];
-//   nextSession?: any | null;
-//   intakeForm?: any;
-// }
 
 // Update schema to use string ID and match Case interface fields
 const formSchema = z.object({
@@ -39,11 +21,11 @@ const formSchema = z.object({
   title: z.string().min(2, "Case title is required"),
   type: z.string().optional(), // Make type optional to match CaseType
   status: z.string().min(1, "Status is required"),
-  clientName: z.string().min(2, "Client name is required"),
+  // clientName: z.string().optional(),
   description: z.string().optional(),
-  lastUpdated: z.string(), // Keep lastUpdated from the Case object
-  caseFileNumber: z.string().min(1, "Case file number is required"),
-  caseFileName: z.string().min(1, "Case file name is required"),
+  lastUpdated: z.string().optional(), // Keep lastUpdated from the Case object (optional)
+  // caseFileNumber: z.string().optional(),
+  // caseFileName: z.string().optional(),
   // Do not include fields not edited directly in this form (like intakeForm, participants etc.)
   // unless the dialog is intended to edit them too.
 });
@@ -54,8 +36,9 @@ export type CaseFormValues = z.infer<typeof formSchema>;
 interface EditCaseDialogProps {
   caseItem: CaseType; // MODIFIED: Renamed 'case' to 'caseItem' to avoid keyword conflict
   onSave: (updatedCase: CaseType) => void; // MODIFIED: Renamed parameter 'case' to 'updatedCase'
+  loadCases: () => void; // Added loadCases to refresh the list after update
 }
-export function EditCaseDialog({ caseItem: initialCaseData, onSave }: EditCaseDialogProps) { // MODIFIED: Destructure 'caseItem' and alias to 'initialCaseData'
+export function EditCaseDialog({loadCases, caseItem: initialCaseData, onSave }: EditCaseDialogProps) { // MODIFIED: Destructure 'caseItem' and alias to 'initialCaseData'
   const [open, setOpen] = useState(false);
 
   
@@ -66,29 +49,40 @@ export function EditCaseDialog({ caseItem: initialCaseData, onSave }: EditCaseDi
     defaultValues: {
       id: initialCaseData.id,
       title: initialCaseData.title,
-      type: initialCaseData.type || "", // Handle optional type
+      // type: initialCaseData.type || "", // Handle optional type
       status: initialCaseData.status,
-      clientName: initialCaseData.clientName,
+      // clientName: initialCaseData.clientName || "",
       description: initialCaseData.description || "", // Handle optional description
-      lastUpdated: initialCaseData.lastUpdated,
-      caseFileNumber: initialCaseData.caseFileNumber,
-      caseFileName: initialCaseData.caseFileName,
+      lastUpdated: initialCaseData.lastUpdated || new Date().toISOString(),
+      // caseFileNumber: initialCaseData.caseFileNumber || "",
+      // caseFileName: initialCaseData.caseFileName || "",
     },
   });
 
-  function onSubmit(formValues: CaseFormValues) {
-    // Merge form values with the original case data to preserve fields not in the form
-    const updatedCaseData: CaseType = { // MODIFIED: Renamed 'updatedCase' to 'updatedCaseData' to avoid conflict with parameter
-      ...initialCaseData, // Start with original data (derived from caseItem prop)
-      ...formValues,       // Overwrite with form values
-      lastUpdated: new Date().toISOString() // Update timestamp (use full ISO string)
-    };
+function onSubmit(formValues: CaseFormValues) {
+  // 1. UpdateCasePayload e jodi 'lastUpdated' na thake, tobe eta kete din
+  // Sudhu backend e jei field gulo allow kore segulo pathan
+  const { id, lastUpdated, ...updatableFields } = formValues; 
 
-    // Save the complete updated case object
-    onSave(updatedCaseData); // MODIFIED: Pass 'updatedCaseData'
-    form.reset(); // Reset the form fields
-    setOpen(false); // Close the dialog
-  }
+  const payload: UpdateCasePayload = {
+    ...updatableFields,
+    // lastUpdated: new Date().toISOString(), // Jodi interface error dey, eta bad din
+  };
+
+  // 2. Promise handling kora jate success/error toast thik moto ase
+  updateCase(initialCaseData.id, payload)
+    .then((response) => {
+      toast.success("Case updated successfully");
+      loadCases();
+      onSave(response);
+      setOpen(false);
+      form.reset();
+    })
+    .catch((error) => {
+      console.error("Error updating case:", error);
+      // toast.error(error.message || "Failed to update case");
+    });
+}
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -108,26 +102,14 @@ export function EditCaseDialog({ caseItem: initialCaseData, onSave }: EditCaseDi
             className="space-y-4"
           >
             <input type="hidden" {...form.register("id")} />
+            <input type="hidden" {...form.register("clientName")} />
+            <input type="hidden" {...form.register("lastUpdated")} />
+            <input type="hidden" {...form.register("caseFileNumber")} />
+            <input type="hidden" {...form.register("caseFileName")} />
             <FormItem>
               <FormLabel>Case Title</FormLabel>
               <FormControl>
                 <Input placeholder="Enter case title" {...form.register("title")} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <FormControl>
-                <Select onValueChange={(value) => form.setValue("type", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select case type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="type1">Type 1</SelectItem>
-                    <SelectItem value="type2">Type 2</SelectItem>
-                    <SelectItem value="type3">Type 3</SelectItem>
-                  </SelectContent>
-                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -139,18 +121,12 @@ export function EditCaseDialog({ caseItem: initialCaseData, onSave }: EditCaseDi
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="on-hold">Pending</SelectItem>
                   </SelectContent>
                 </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Client Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter client name" {...form.register("clientName")} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -160,25 +136,13 @@ export function EditCaseDialog({ caseItem: initialCaseData, onSave }: EditCaseDi
                 <Textarea placeholder="Enter case description" {...form.register("description")} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Case File Number</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter case file number" {...form.register("caseFileNumber")} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Case File Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter case file name" {...form.register("caseFileName")} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            </FormItem>            
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
+              {/* Submit button e onClick={onSubmit} thakar dorkar nei, 
+                  form.handleSubmit(onSubmit) eta handle korbe */}
               <Button type="submit">
                 Save Changes
               </Button>

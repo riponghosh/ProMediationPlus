@@ -1,5 +1,5 @@
 import api from "./api";
-import { CreateCasePayload, GetCasesParams } from "./interface";
+import { CreateCasePayload, GetCasesParams, UpdateCasePayload } from "./interface";
 
 export const createCase = async (data: CreateCasePayload) => {
   try {
@@ -29,6 +29,30 @@ export const getCases = async (params: GetCasesParams) => {
     throw error.response?.data || {
       error: true,
       message: "Failed to fetch cases",
+    };
+  }
+};
+
+export const updateCase = async (caseId: string, payload: UpdateCasePayload) => {
+  try {
+    const response = await api.put(`/api/v1/cases/${caseId}`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to update case",
+    };
+  }
+};
+
+export const deleteCase = async (caseId: string) => {
+  try {
+    const response = await api.delete(`/api/v1/cases/${caseId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to delete case",
     };
   }
 };

@@ -25,7 +25,7 @@ import { Link } from "react-router-dom";
 import { getAllItems, putItem, deleteItem, getNotesForCase } from "@/services/localDbService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Case as CaseType } from "@/types/models"; // Import CaseType
-import { createCase, getCases } from "@/api/CaseServices";
+import { createCase, deleteCase, getCases } from "@/api/CaseServices";
 
 // Removed local Case interface, will use CaseType from models.ts
 
@@ -122,22 +122,25 @@ const CaseFilesPage = () => {
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [selectedCaseDetailId, setSelectedCaseDetailId] = useState<string | null>("Case-1"); 
   const [notes, setNotes] = useState<any[]>([]); // Assuming notes structure is flexible for now
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1); 
 
     // Load Cases from IndexedDB on initial render
-useEffect(() => {
   const loadCases = async () => {
     setIsLoading(true);
     try {
       const res = await getCases({
-        page: 1,
+        page: page,
         limit: 10,
-        status: activeTab,
+        status: activeTab === "all" ? "" : activeTab, // Status manage korun
         search: searchTerm,
       });
 
-      // ⚠️ depends on your backend response structure
-      // assume: res.data = array
       const casesArray = res.data || [];
+      
+      if (res.meta) {
+        setTotalPages(res.meta.totalPage || 1);
+      }
 
       const casesObject = casesArray.reduce((acc: any, item: CaseType) => {
         acc[item.id] = item;
@@ -145,7 +148,6 @@ useEffect(() => {
       }, {});
 
       setCases(casesObject);
-
     } catch (error) {
       console.error(error);
       toast.error("Failed to load cases");
@@ -154,8 +156,13 @@ useEffect(() => {
     }
   };
 
-  loadCases();
-}, [activeTab, searchTerm]);
+  useEffect(() => {
+    loadCases();
+  }, [activeTab, searchTerm, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, searchTerm]);
 
   useEffect(() => {
     if (!selectedCaseDetailId) {
@@ -198,7 +205,7 @@ useEffect(() => {
       currentCase.caseFileNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (activeTab === "active") return matchesSearch && currentCase.status === "active";
-    if (activeTab === "pending") return matchesSearch && currentCase.status === "pending";
+    if (activeTab === "on-hold") return matchesSearch && currentCase.status === "on-hold";
     if (activeTab === "closed") return matchesSearch && currentCase.status === "closed";
 
     return false;
@@ -236,7 +243,7 @@ useEffect(() => {
 
   const handleDeleteCase = async (id: string) => {
     try {
-      await deleteItem('cases', id);
+      await deleteCase(id);
       setCases(prev => {
         const newState = { ...prev };
         delete newState[id];
@@ -246,6 +253,7 @@ useEffect(() => {
       if (selectedCaseDetailId === id) {
         setSelectedCaseDetailId(null);
       }
+      loadCases(); // Refresh the list after deletion
       toast.success("Case file deleted successfully");
     } catch (error) {
       console.error(`Error deleting Case ${id} from IndexedDB:`, error);
@@ -343,9 +351,13 @@ useEffect(() => {
 
   } catch (error: any) {
     console.error(error);
-    toast.error(error?.message || "Failed to create case");
+    // toast.error(error?.message || "Failed to create case");
   }
 };
+
+const activeCount = Object.values(cases).filter(c => c.status === "active").length;
+const onHoldCount = Object.values(cases).filter(c => c.status === "on-hold").length;
+const closedCount = Object.values(cases).filter(c => c.status === "closed").length;
 
   return (
     <Layout>
@@ -377,7 +389,7 @@ useEffect(() => {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>
+                    <AlertDialogAction onClick={() => {handleDeleteCase(selectedCases[0]); setSelectedCases([]);}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -387,6 +399,7 @@ useEffect(() => {
             {/* CreateCaseDialog: onSave now directly calls handleCreateCase, showTrigger is true by default */}
             <CreateCaseDialog 
               onSave={handleCreateCase} 
+              loadCases={loadCases}
               showTrigger={true} 
             />
           </div>
@@ -415,13 +428,13 @@ useEffect(() => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full"> {/* Changed from grid grid-cols-3 */}
             <TabsTrigger value="active" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Active ({Object.values(cases).filter(c => c.status === "active").length})
+              Active {activeCount > 0 && `(${activeCount})`}
             </TabsTrigger>
-            <TabsTrigger value="pending" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Pending ({Object.values(cases).filter(c => c.status === "pending").length})
+            <TabsTrigger value="on-hold" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
+              Pending {onHoldCount > 0 && `(${onHoldCount})`}
             </TabsTrigger>
             <TabsTrigger value="closed" className={`flex-1 ${isMobile ? "text-xs py-1.5" : ""}`}>
-              Closed ({Object.values(cases).filter(c => c.status === "closed").length})
+              Closed {closedCount > 0 && `(${closedCount})`}
             </TabsTrigger>
           </TabsList>
 
@@ -446,8 +459,8 @@ useEffect(() => {
                                 aria-label={`Select case ${currentCase.title}`}
                               />
                               <Briefcase className={`h-4 sm:h-5 w-4 sm:w-5 mt-0.5 flex-shrink-0 ${
-                                currentCase.status === "Active" ? "text-blue-500" :
-                                currentCase.status === "Pending" ? "text-amber-500" : "text-gray-500"
+                                currentCase.status === "active" ? "text-blue-500" :
+                                currentCase.status === "on-hold" ? "text-amber-500" : "text-gray-500"
                               }`} />
                               <div className="ml-2 sm:ml-3 flex-grow">
                                 <Link to={`/case-files/${currentCase.id}/summary`} className={`${isMobile ? "text-sm" : "text-base"} font-medium hover:underline cursor-pointer text-blue-600`}>
@@ -484,6 +497,7 @@ useEffect(() => {
                                 </Button>
                                 <EditCaseDialog
                                   caseItem={currentCase}
+                                  loadCases={loadCases}
                                   onSave={handleSaveCase}
                                 />
                                 <AlertDialog>
@@ -543,10 +557,37 @@ useEffect(() => {
                       </div>
                     )}
                   </div>
-                </CardContent>
+                </CardContent>                
               </Card>
             )}
+            {/* Pagination */}
+            <div className="flex justify-end mt-4 items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1 || isLoading}
+              >
+                Previous
+              </Button>
+
+              <span className="text-sm px-2">
+                Page <strong>{page}</strong> of {totalPages}
+              </span>
+
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+                disabled={page === totalPages || isLoading}
+              >
+                Next
+              </Button>
+            </div>
+
+            
           </TabsContent>
+
         </Tabs>
       </div>
     </Layout>

@@ -161,3 +161,16 @@ export interface GetCasesParams {
   status?: string;
   search?: string;
 }
+
+export interface UpdateCasePayload {
+  status?: string;
+  title?: string;
+  description?: string;
+  assignedTo?: string | null;
+}
+export interface UpdateCasePayload {
+  title?: string;
+  status?: string;
+  description?: string;
+  lastUpdated?: string;
+}
