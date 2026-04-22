@@ -17,8 +17,8 @@ export const getCases = async (params: GetCasesParams) => {
   try {
     const response = await api.get("/api/v1/cases", {
       params: {
-        page: params.page || 1,
-        limit: params.limit || 10,
+        page: params.page ,
+        limit: params.limit,
         status: params.status || "",
         search: params.search || "",
       },

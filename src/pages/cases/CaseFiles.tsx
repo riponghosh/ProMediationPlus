@@ -131,7 +131,7 @@ const CaseFilesPage = () => {
     try {
       const res = await getCases({
         page: page,
-        limit: 10,
+        limit: 100,
         status: activeTab === "all" ? "" : activeTab, // Status manage korun
         search: searchTerm,
       });
@@ -154,6 +154,25 @@ const CaseFilesPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  const getPageNumbers = () => {
+    const pages = [];
+
+    let start = Math.max(1, page - 1);
+    let end = Math.min(totalPages, page + 1);
+
+    if (page === 1) {
+      end = Math.min(3, totalPages);
+    }
+    if (page === totalPages) {
+      start = Math.max(1, totalPages - 2);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
   };
 
   useEffect(() => {
@@ -562,8 +581,9 @@ const closedCount = Object.values(cases).filter(c => c.status === "closed").leng
             )}
             {/* Pagination */}
             <div className="flex justify-end mt-4 items-center gap-2">
-              <Button 
-                variant="outline" 
+              {/* Previous */}
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1 || isLoading}
@@ -571,14 +591,26 @@ const closedCount = Object.values(cases).filter(c => c.status === "closed").leng
                 Previous
               </Button>
 
-              <span className="text-sm px-2">
-                Page <strong>{page}</strong> of {totalPages}
-              </span>
+              {/* Page Numbers */}
+              {getPageNumbers().map((p) => (
+                <Button
+                  key={p}
+                  size="sm"
+                  variant={p === page ? "default" : "outline"}
+                  onClick={() => setPage(p)}
+                  disabled={isLoading}
+                >
+                  {p}
+                </Button>
+              ))}
 
-              <Button 
-                variant="outline" 
+              {/* Next */}
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+                onClick={() =>
+                  setPage((prev) => (prev < totalPages ? prev + 1 : prev))
+                }
                 disabled={page === totalPages || isLoading}
               >
                 Next

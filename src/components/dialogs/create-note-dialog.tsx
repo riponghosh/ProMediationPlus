@@ -16,30 +16,39 @@ import { FileText, Save, Check, ChevronsUpDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { Matter, Note } from "@/types/models";
+import { Note } from "@/types/models";
 import { getAllItems, addItem } from "@/services/localDbService";
+import { getCases } from '@/api/CaseServices';
 
 interface CreateNoteDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+
 export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
-  const [matters, setMatters] = useState<Matter[]>([]);
+  const [matters, setMatters] = useState<any[]>([]);
   const [isLoadingMatters, setIsLoadingMatters] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     caseFileNumber: "",
     content: ""
   });
+  const params = {
+  page: 1,
+  limit: 100,
+  status: 'active',
+  search: ''
+};
 
   useEffect(() => {
     if (isOpen) {
       const loadMatters = async () => {
         setIsLoadingMatters(true);
         try {
-          const loadedMatters = await getAllItems('matters');
-          setMatters(loadedMatters);
+          const loadedMatters = await getCases(params); 
+          console.log('Loaded matters:', loadedMatters);
+          setMatters(loadedMatters.data || []);
         } catch (error) {
           console.error('Error loading matters:', error);
           toast({ title: "Error", description: "Failed to load case files for selection.", variant: "destructive" });
