@@ -26,7 +26,7 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
   if (!dbPromise) {
     dbPromise = openDB<MediatorMateDBSchema>(DATABASE_NAME, DATABASE_VERSION, {
       upgrade(db: IDBPDatabase<MediatorMateDBSchema>, oldVersion: number, newVersion: number | null, transaction: IDBPTransaction<MediatorMateDBSchema, StoreNameUnion[], "versionchange">) {
-        console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
+        // console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
 
         const ensureStoreAndIndexes = <SName extends StoreNameUnion>(
           storeName: SName,
@@ -40,10 +40,10 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
           let store;
           if (!db.objectStoreNames.contains(storeName)) {
             store = db.createObjectStore(storeName, keyPathOption);
-            console.log(`Created '${storeName}' object store.`);
+            // console.log(`Created '${storeName}' object store.`);
           } else {
             store = transaction.objectStore(storeName);
-            console.log(`Ensuring indexes for existing '${storeName}' object store.`);
+            // console.log(`Ensuring indexes for existing '${storeName}' object store.`);
           }
           indexConfigs.forEach(config => {
             if (!store.indexNames.contains(config.indexName)) {
@@ -70,7 +70,7 @@ const getDb = (): Promise<IDBPDatabase<MediatorMateDBSchema>> => {
         // Cast to DOMStringList to satisfy TypeScript strictness if db.objectStoreNames is typed more narrowly.
         if ((db.objectStoreNames as unknown as DOMStringList).contains(oldContactsStoreName)) {
           db.deleteObjectStore(oldContactsStoreName as any); // Cast to any for deletion as it's not in current schema
-          console.log(`Deleted '${oldContactsStoreName}' object store as it is no longer defined in the schema.`);
+          //console.log(`Deleted '${oldContactsStoreName}' object store as it is no longer defined in the schema.`);
         }
 
         ensureStoreAndIndexes('documents', { keyPath: 'id' }, [
@@ -182,7 +182,7 @@ export const getItemsByIndex = async <
 ): Promise<MediatorMateDBSchema[Store]['value'][]> => {
   try {
     const db = await getDb();
-    console.log(`localDbService.getItemsByIndex: store='${storeName}', index='${indexName}', query (raw):`, query, `(stringified): ${JSON.stringify(query)}`);
+    //console.log(`localDbService.getItemsByIndex: store='${storeName}', index='${indexName}', query (raw):`, query, `(stringified): ${JSON.stringify(query)}`);
     // Cast query to `any` to bypass overly strict type checking here, as idb handles it.
     return await db.getAllFromIndex(storeName, indexName, query as any);
   } catch (error) {
@@ -223,7 +223,7 @@ export const clearStore = async <Store extends StoreNameUnion>(
     try {
         const db = await getDb();
         await db.clear(storeName);
-        console.log(`Store "${storeName}" cleared successfully.`);
+       // console.log(`Store "${storeName}" cleared successfully.`);
     } catch (error) {
         console.error(`Error clearing store ${storeName}:`, error);
         throw new Error(`Failed to clear store ${storeName}`);

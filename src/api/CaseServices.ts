@@ -33,6 +33,18 @@ export const getCases = async (params: GetCasesParams) => {
   }
 };
 
+export const getCaseById = async (caseId: string) => {
+  try {
+    const response = await api.get(`/api/v1/cases/${caseId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to fetch case details",
+    };
+  }
+};
+
 export const updateCase = async (caseId: string, payload: UpdateCasePayload) => {
   try {
     const response = await api.put(`/api/v1/cases/${caseId}`, payload);

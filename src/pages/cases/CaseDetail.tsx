@@ -35,6 +35,7 @@ import { CaseDetails } from "@/components/cases/CaseDetails";
 import { getItem, getItemsByIndex, putItem, getNotesForCase } from "@/services/localDbService"; // Import DB service functions
 import type { Case as CaseType, CaseFileMetadata, Task, Note as NoteType } from "@/types/models"; // Import correct types
 import { Folder, ChevronRight } from "lucide-react"; // Added Folder icon
+import { getCaseById } from "@/api/CaseServices";
 
 // Use imported types directly
 // Remove local interface definitions for Matter, Document, Task, MeetingNote, NextSession
@@ -44,6 +45,7 @@ import { Folder, ChevronRight } from "lucide-react"; // Added Folder icon
 
 const CaseDetailPage = () => {
   const { id: caseId } = useParams<{ id: string }>(); // Rename id to caseId for clarity
+console.log("CaseDetailPage rendered with caseId:", caseId); // Debug log for caseId
   const [notes, setNotes] = useState<any[]>([]);
 
   useEffect(() => {
@@ -81,9 +83,9 @@ const CaseDetailPage = () => {
       }
       setIsLoading(true);
       try {
-        const matter = await getItem('cases', caseId); // Changed 'matters' to 'cases'
+        const matter = await getCaseById(caseId); // Changed 'matters' to 'cases'
         if (matter) {
-          setCurrentMatter(matter as CaseType);
+          setCurrentMatter(matter.data as CaseType); // Ensure correct typing
           setError(null);
         } else {
           setError("Case not found.");
@@ -101,34 +103,34 @@ const CaseDetailPage = () => {
   }, [caseId]);
 
   // Fetch files/folders for the current folder
-  useEffect(() => {
-    const loadFolderContents = async () => {
-      if (!caseId) return; // Don't fetch if caseId isn't available
+  // useEffect(() => {
+  //   const loadFolderContents = async () => {
+  //     if (!caseId) return; // Don't fetch if caseId isn't available
 
-      setIsLoadingFiles(true);
-      try {
-        // Use compound key for the index query: [caseId, parentId]
-        // Use empty string "" to represent the root parentId in the query
-        const parentIdQuery = currentFolderId === null ? "" : currentFolderId;
-        const items = await getItemsByIndex('caseFiles', 'by-parent', [caseId, parentIdQuery]);
-        // Sort folders first, then files, alphabetically
-        items.sort((a, b) => {
-            if (a.itemType === 'folder' && b.itemType !== 'folder') return -1;
-            if (a.itemType !== 'folder' && b.itemType === 'folder') return 1;
-            return a.name.localeCompare(b.name);
-        });
-        setDisplayedItems(items);
-      } catch (e) {
-        console.error(`Error loading items for folder ${currentFolderId}:`, e);
-        toast.error("Failed to load folder contents.");
-        setDisplayedItems([]); // Clear items on error
-      } finally {
-        setIsLoadingFiles(false);
-      }
-    };
+  //     setIsLoadingFiles(true);
+  //     try {
+  //       // Use compound key for the index query: [caseId, parentId]
+  //       // Use empty string "" to represent the root parentId in the query
+  //       const parentIdQuery = currentFolderId === null ? "" : currentFolderId;
+  //       const items = await getCaseById(caseId);
+  //       // Sort folders first, then files, alphabetically
+  //       // items.sort((a, b) => {
+  //       //     if (a.itemType === 'folder' && b.itemType !== 'folder') return -1;
+  //       //     if (a.itemType !== 'folder' && b.itemType === 'folder') return 1;
+  //       //     return a.name.localeCompare(b.name);
+  //       // });
+  //       setDisplayedItems(items.data);
+  //     } catch (e) {
+  //       console.error(`Error loading items for folder ${currentFolderId}:`, e);
+  //       toast.error("Failed to load folder contents.");
+  //       setDisplayedItems([]); // Clear items on error
+  //     } finally {
+  //       setIsLoadingFiles(false);
+  //     }
+  //   };
 
-    loadFolderContents();
-  }, [caseId, currentFolderId]); // Re-fetch when caseId or currentFolderId changes
+  //   loadFolderContents();
+  // }, [caseId, currentFolderId]); // Re-fetch when caseId or currentFolderId changes
 
   // Updated save handler using putItem
   const handleSaveCase = (updatedCaseData: Partial<CaseType>) => { // Renamed from handleSaveMatter
@@ -231,6 +233,7 @@ const CaseDetailPage = () => {
 
   // Now use currentMatter for rendering
   const caseDetails = currentMatter;
+  
 
   return (
     <Layout>

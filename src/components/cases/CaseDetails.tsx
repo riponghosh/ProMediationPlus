@@ -261,7 +261,7 @@ export function CaseDetails({ case: caseData, onSave }: CaseDetailsProps) {
                 <span className={isMobile ? "text-sm" : ""}>Client Details Summary</span>
               </div>
               <Button variant="outline" size={isMobile ? "sm" : "default"} className={`${isMobile ? "px-1.5 py-0.5 h-auto" : ""} flex items-center gap-1`} asChild>
-                <Link to={`/case-files/${caseData.id}/client-details`}>
+                <Link to={`/case-files/${caseData.id}`}>
                   <ExternalLink className={isMobile ? "h-2.5 w-2.5" : "h-4 w-4"} />
                   <span className={isMobile ? "text-[11px]" : "text-xs"}>View Full Page</span>
                 </Link>
