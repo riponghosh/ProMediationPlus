@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTasksContext } from "@/contexts/TasksContext";
 import { Case } from "@/types/models";
+import { getCases } from "@/api/CaseServices";
+import { createCaseTask } from "@/api/TaskServices";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -24,7 +26,7 @@ const formSchema = z.object({
     required_error: "Due date is required",
   }),
   status: z.string().default("In Progress"),
-  assignedTo: z.string().default("Mediator"),
+  assignedTo: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -33,6 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function CreateTaskDialog() {
   const [open, setOpen] = useState(false);
   const { tasks, handleSaveTask } = useTasksContext();
+  const [cases, setCases] = useState<Case[]>([]);
   
   const uniqueCases: Pick<Case, 'id' | 'caseFileNumber' | 'title'>[] = Array.from(
     new Map(
@@ -43,31 +46,64 @@ export function CreateTaskDialog() {
     ).values()
   );
 
+
+
+  useEffect( () => {
+    const params = {
+      page: 1,
+      limit: 100,
+      status: 'active',
+      search: ''
+    };
+    const fetchCases = async () => {
+      try {
+        const loadedCases = await getCases(params);
+        setCases(loadedCases.data || []);
+      } catch (error) {
+        console.error("Error fetching cases:", error);
+      }
+    };
+    fetchCases();
+  }, []);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       caseId: "",
-      priority: "Medium",
-      status: "In Progress",
-      assignedTo: "Mediator",
+      priority: "",
+      status: "",
+      assignedTo: "",
       description: "",
     },
   });
 
-  function onSubmit(values: FormValues) {
-    const numericTaskIds = tasks.map(task => typeof task.id === 'number' ? task.id : parseInt(task.id as string, 10)).filter(id => !isNaN(id));
-    const nextId = numericTaskIds.length > 0 ? Math.max(0, ...numericTaskIds) + 1 : 1;
+  async function onSubmit(values: FormValues) {
+    // const numericTaskIds = tasks.map(task => typeof task.id === 'number' ? task.id : parseInt(task.id as string, 10)).filter(id => !isNaN(id));
+    // const nextId = numericTaskIds.length > 0 ? Math.max(0, ...numericTaskIds) + 1 : 1;
     
-    const selectedCase = uniqueCases.find(m => m.id === values.caseId);
+    
+    const selectedCase = cases.find(m => m.id === values.caseId);
 
     if (!selectedCase) {
       toast.error("Selected case not found. Please try again.");
       return;
     }
+    try {
+      
+    const apiPayload = {
+      title: values.title,
+      description: values.description || "",
+      status: values.status,
+      priority: values.priority,
+      dueDate: values.dueDate.toISOString(),
+      assignedTo: values.assignedTo || null,
+    };
+    
+    const apiResponse = await createCaseTask(values.caseId, apiPayload);
 
     const newTask = {
-      id: nextId.toString(),
+      id: apiResponse?.id || Math.random().toString(), 
       title: values.title,
       caseId: selectedCase.id,
       caseFileNumber: selectedCase.caseFileNumber,
@@ -80,7 +116,7 @@ export function CreateTaskDialog() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    
+  
     handleSaveTask({
       ...newTask,
       dueDate: values.dueDate.toISOString(),
@@ -90,6 +126,10 @@ export function CreateTaskDialog() {
     
     form.reset();
     setOpen(false);
+  }catch (error: any) {
+      toast.error(error.message || "Failed to save task to database");
+      console.error("Submit error:", error);
+    }
   }
 
   return (
@@ -133,7 +173,7 @@ export function CreateTaskDialog() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {uniqueCases.map((caseItem) => (
+                      {cases.map((caseItem) => (
                         <SelectItem key={caseItem.id} value={caseItem.id}>
                           {caseItem.caseFileNumber} - {caseItem.title}
                         </SelectItem>

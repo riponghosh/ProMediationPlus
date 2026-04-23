@@ -174,3 +174,12 @@ export interface UpdateCasePayload {
   description?: string;
   lastUpdated?: string;
 }
+
+export interface CaseTaskData {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  dueDate: string;
+  assignedTo: string | null;
+}
