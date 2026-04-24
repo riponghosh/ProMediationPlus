@@ -347,7 +347,7 @@ console.log("CaseDetailPage rendered with caseId:", caseId); // Debug log for ca
                         className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                         onClick={() => handleItemClick(item)} // Add click handler
                       >
-                        <div className="flex items-center">
+                        {/* <div className="flex items-center">
                           {getFileIcon(item)}
                           <div className="ml-3">
                             <p className="text-sm font-medium">{item.name}</p>
@@ -366,7 +366,7 @@ console.log("CaseDetailPage rendered with caseId:", caseId); // Debug log for ca
                               )}
                             </div>
                           </div>
-                        </div>
+                        </div> */}
                         {/* TODO: Add item actions (rename, delete, etc.) */}
                         <Button variant="ghost" size="icon">
                           <FileIcon className="h-4 w-4" />

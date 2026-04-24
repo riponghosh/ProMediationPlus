@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CaseDetails } from "@/components/cases/Caseform"; // Corrected import path
 import type { Case as CaseType } from "@/types/models"; // Import the Case type
+import { getCaseById } from "@/api/CaseServices";
 
 const ClientDetailsPage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -34,9 +35,9 @@ const ClientDetailsPage = () => {
       
       setIsLoading(true);
       try {
-        const loadedCaseData = await getItem('cases', caseId);
-        if (loadedCaseData) {
-          setCaseData(loadedCaseData as CaseType); // Assert type if necessary
+        const loadedCaseData = await getCaseById(caseId);        
+        if (loadedCaseData.data) {
+          setCaseData(loadedCaseData.data as CaseType); // Assert type if necessary
           setError(null);
         } else {
           setError("Case not found.");
@@ -109,9 +110,11 @@ const ClientDetailsPage = () => {
               </div>
             </div>
           </div>
-          <Button size={isMobile ? "sm" : "default"}>
-            <Edit className={`${iconSizeClass} mr-2`} />
-            Edit Details
+          <Button size={isMobile ? "sm" : "default"} asChild>
+            <Link to={`/case-files/${caseData.id}/edit`}>
+              <Edit className={`${iconSizeClass} mr-2`} />
+              Edit Details
+            </Link>
           </Button>
         </div>
 
@@ -186,7 +189,7 @@ const ClientDetailsPage = () => {
                     <p className={`${isMobile ? "text-xs" : "text-sm"}`}>{caseData.description || "No description provided"}</p>
                   </div>
                   
-                  {caseData.intakeForm && (
+                  {/* {caseData.intakeForm && (
                     <>
                       <Separator />
                       <div>
@@ -199,7 +202,7 @@ const ClientDetailsPage = () => {
                         ))}
                       </div>
                     </>
-                  )}
+                  )} */}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -251,7 +254,7 @@ const ClientDetailsPage = () => {
                   </CardTitle>
                   <CardDescription>People related to this case</CardDescription>
                 </CardHeader>
-                <CardContent className={`space-y-${isMobile ? '3' : '4'} ${isMobile ? "p-4 pt-0" : ""}`}>
+                {/* <CardContent className={`space-y-${isMobile ? '3' : '4'} ${isMobile ? "p-4 pt-0" : ""}`}>
                   {caseData.parties && caseData.parties.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
                       {caseData.parties.map((party, index) => (
@@ -269,7 +272,7 @@ const ClientDetailsPage = () => {
                       </Button>
                     </div>
                   )}
-                </CardContent>
+                </CardContent> */}
               </Card>
             </TabsContent>
           </div>
