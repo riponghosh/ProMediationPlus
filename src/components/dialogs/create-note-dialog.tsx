@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Note } from "@/types/models";
 import { getAllItems, addItem } from "@/services/localDbService";
 import { getCases } from '@/api/CaseServices';
+import { createCaseNote } from '@/api/NotesServices';
 
 interface CreateNoteDialogProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
   const [isLoadingMatters, setIsLoadingMatters] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
+    caseId: "",
     caseFileNumber: "",
     content: ""
   });
@@ -57,7 +59,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
         }
       };
       loadMatters();
-      setFormData({ title: "", caseFileNumber: "", content: "" });
+      setFormData({ title: "", caseId: "", caseFileNumber: "", content: "" });
     }
   }, [isOpen]);
 
@@ -66,8 +68,8 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCaseFileSelect = (value: string) => {
-    setFormData(prev => ({ ...prev, caseFileNumber: value }));
+  const handleCaseFileSelect = (matterId: string, matterCaseFileNumber: string) => {
+    setFormData(prev => ({ ...prev, caseId: matterId, caseFileNumber: matterCaseFileNumber }));
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -82,22 +84,20 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
       return;
     }
 
-    const noteData: Note = {
-      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    const noteData = {
       title: formData.title.trim(),
       caseFileNumber: formData.caseFileNumber,
       content: formData.content.trim(),
       tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     try {
-      await addItem('notes', noteData);
+      await createCaseNote(formData.caseId, noteData);
       toast({
         title: "Note created",
         description: `"${noteData.title}" has been added to your notes.`,
       });
+      setFormData({ title: "", caseId: "", caseFileNumber: "", content: "" });
       onClose();
     } catch (error) {
       console.error("Failed to save note:", error);
@@ -127,7 +127,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
             />
           </div>
 
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label>Case File Number</Label>
             <Popover>
               <PopoverTrigger asChild>
@@ -164,7 +164,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
                           key={matter.id}
                           value={matter.caseFileNumber}
                           onSelect={() => {
-                            handleCaseFileSelect(matter.caseFileNumber);
+                            handleCaseFileSelect(matter.id, matter.caseFileNumber);
                             document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Escape'}));
                           }}
                         >
