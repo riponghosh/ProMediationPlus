@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { getCaseById } from "@/api/CaseServices";
 
 const ChecklistPage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -50,9 +51,9 @@ const ChecklistPage = () => {
     }
     setIsLoading(true);
     try {
-      const caseData = await getItem('cases', caseId);
-      if (caseData) {
-        setCurrentCase(caseData as CaseModel);
+      const caseData = await getCaseById(caseId);
+      if (caseData.data) {
+        setCurrentCase(caseData.data as CaseModel);
         const checklistData = await getChecklistItemsForCase(caseId);
         setItems(checklistData);
         setError(null);

@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Case, Meeting } from "@/types/models"; // Import Case and Meeting types
+import { getCaseById } from "@/api/CaseServices";
+import { createCaseMeeting, getCaseMeetings } from "@/api/MeetingServices";
 
 const MeetingsPage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -45,9 +47,9 @@ const MeetingsPage = () => {
     caseId: caseId || '',
     title: '',
     date: new Date().toISOString().split('T')[0],
-    time: '10:00',
-    duration: '60',
-    location: 'Virtual Meeting',
+    // time: '',
+    // duration: '',
+    location: '',
     participants: [],
     agenda: '',
     notes: '',
@@ -63,9 +65,9 @@ const MeetingsPage = () => {
         return;
       }
       try {
-        const fetchedCaseData = await getItem('cases', caseId);
-        if (fetchedCaseData) {
-          setCaseData(fetchedCaseData as Case); 
+        const fetchedCaseData = await getCaseById(caseId);
+        if (fetchedCaseData.data) {
+          setCaseData(fetchedCaseData.data as Case);
         } else {
           setError("Failed to load case data. The case you\'re looking for doesn\'t exist or couldn\'t be loaded.");
         }
@@ -81,19 +83,20 @@ const MeetingsPage = () => {
   }, [caseId]);
 
   // Load meetings for this case
-  useEffect(() => {
-    const loadMeetings = async () => {
+  const loadMeetings = async () => {
       if (!caseId) return;
       
       try {
         // Assuming you have an index for meetings by caseId
-        const meetingsData = await getItemsByIndex('meetings', 'by-caseId', caseId);
+        const meetingsData = await getCaseMeetings(caseId);
         
         // Sort meetings by date (newest first)
         // Ensure meetingsData is treated as Meeting[] from the imported type
-        const sortedMeetings = (meetingsData as Meeting[]).sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
+        const sortedMeetings = (meetingsData.data as Meeting[]).sort((a, b) => 
+           new Date(a.date).getTime() - new Date(b.date).getTime()
         );
+        console.log(sortedMeetings);
+        
         
         setMeetings(sortedMeetings);
       } catch (e) {
@@ -102,6 +105,8 @@ const MeetingsPage = () => {
         setMeetings([]); // This should now be fine with imported Meeting type
       }
     };
+  useEffect(() => {
+    
     
     loadMeetings();
   }, [caseId]);
@@ -154,7 +159,7 @@ const MeetingsPage = () => {
     }
     
     // Basic validation
-    if (!newMeeting.title || !newMeeting.date || !newMeeting.time || !newMeeting.duration) {
+    if (!newMeeting.title || !newMeeting.date ) { // || !newMeeting.time || !newMeeting.duration
       console.error("Validation failed: Missing required meeting details.", newMeeting);
       toast.error("Please fill in all required meeting details (Title, Date, Time, Duration).");
       return;
@@ -162,46 +167,47 @@ const MeetingsPage = () => {
 
     try {
       const now = new Date().toISOString();
-      const meetingToCreate: Meeting = {
-        id: crypto.randomUUID(),
-        caseId,
+      const meetingToCreate  = {
+        // id: crypto.randomUUID(),
+        // caseId,
         title: newMeeting.title || 'Untitled Meeting', // Provide default if empty
         date: newMeeting.date,
-        time: newMeeting.time,
-        duration: newMeeting.duration,
+        // time: newMeeting.time,
+        // duration: newMeeting.duration,
         location: newMeeting.location || 'Not specified', // Provide default
         participants: newMeeting.participants || [],
         agenda: newMeeting.agenda || '',
-        notes: newMeeting.notes || '', // Ensure notes is always a string
-        createdAt: now,
-        updatedAt: now,
+        // notes: newMeeting.notes || '', // Ensure notes is always a string
+        // createdAt: now,
+        // updatedAt: now,
       };
       
       console.log("Attempting to put item into database:", meetingToCreate);
-      await putItem('meetings', meetingToCreate);
-      console.log("Item successfully put into database.");
+      await createCaseMeeting(caseId, meetingToCreate);
+      // console.log("Item successfully put into database.");
+      loadMeetings(); // Refresh the meetings list after creation
       
       // Update the meetings list, maintaining sort order (newest first by date)
-      setMeetings(prev => {
-        const updatedMeetings = [meetingToCreate, ...prev];
-        const sortedMeetings = updatedMeetings.sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        console.log("Meetings state updated and sorted:", sortedMeetings);
-        return sortedMeetings;
-      });
+      // setMeetings(prev => {
+      //   const updatedMeetings = [meetingToCreate, ...prev];
+      //   const sortedMeetings = updatedMeetings.sort((a, b) => 
+      //     new Date(b.date).getTime() - new Date(a.date).getTime()
+      //   );
+      //   console.log("Meetings state updated and sorted:", sortedMeetings);
+      //   return sortedMeetings;
+      // });
       
       // Reset form and close dialog
       setNewMeeting({
         caseId: caseId || '',
         title: '',
         date: new Date().toISOString().split('T')[0],
-        time: '10:00',
-        duration: '60',
+        // time: '10:00',
+        // duration: '60',
         location: 'Virtual Meeting',
         participants: [],
-        agenda: '',
-        notes: '',
+        // agenda: '',
+        // notes: '',
       });
       setIsNewMeetingDialogOpen(false);
       
@@ -326,7 +332,7 @@ const MeetingsPage = () => {
                     <Input
                       id="time"
                       type="time"
-                      value={newMeeting.time}
+                      // value={newMeeting.time}
                       onChange={(e) => setNewMeeting(prev => ({ ...prev, time: e.target.value }))}
                       className={`${isMobile ? "h-8 text-xs" : "h-9 text-sm"}`}
                       required
@@ -340,7 +346,7 @@ const MeetingsPage = () => {
                     <Input
                       id="duration"
                       type="number"
-                      value={newMeeting.duration}
+                      // value={newMeeting.duration}
                       onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: e.target.value }))}
                       className={`${isMobile ? "h-8 text-xs" : "h-9 text-sm"}`}
                       min="1" // Ensure positive duration
@@ -456,7 +462,7 @@ const MeetingsPage = () => {
                               {meeting.participants && meeting.participants.length > 0 && (
                                 <div className={`flex items-center ${isMobile ? "text-xs" : "text-sm"}`}>
                                   <Users className={`${iconSizeClass} mr-1.5 text-muted-foreground`} />
-                                  <span className="line-clamp-1">{meeting.participants.join(', ')}</span>
+                                  {/* <span className="line-clamp-1">{meeting.participants.join(', ')}</span> */}
                                 </div>
                               )}
                               {meeting.agenda && (

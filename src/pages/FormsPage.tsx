@@ -18,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TemplateBuilder, TemplateBuilderProps } from "@/pages/forms/FormBuilder"; // Import TemplateBuilderProps
 import type { Case } from "@/types/models"; // Import Case type
+import { getCaseById } from "@/api/CaseServices";
 
 const availableForms = [
   {
@@ -94,9 +95,9 @@ const FormsPage = () => {
       
       setLoading(true);
       try {
-        const fetchedCaseData = await getItem('cases', caseId);
-        if (fetchedCaseData) {
-          setCaseData(fetchedCaseData as Case); 
+        const fetchedCaseData = await getCaseById(caseId);
+        if (fetchedCaseData.data) {
+          setCaseData(fetchedCaseData.data as Case); 
           setError(null);
         } else {
           setError("Case not found.");

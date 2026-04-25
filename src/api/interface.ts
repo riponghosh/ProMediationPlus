@@ -183,3 +183,12 @@ export interface CaseTaskData {
   dueDate: string;
   assignedTo: string | null;
 }
+
+export interface CaseMeetingData {
+  title: string;
+  date: string; // ISO String
+  location: string;
+  participants: string[];
+  agenda: string;
+  // notes: string;
+}

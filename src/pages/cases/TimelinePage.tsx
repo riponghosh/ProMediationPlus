@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Case as CaseModel, TimelineEvent } from "@/types/models";
+import { getCaseById } from "@/api/CaseServices";
 
 const TimelinePage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -53,9 +54,9 @@ const TimelinePage = () => {
       
       setIsLoading(true);
       try {
-        const caseData = await getItem('cases', caseId);
-        if (caseData) {
-          setCurrentCase(caseData as CaseModel);
+        const caseData = await getCaseById(caseId);
+        if (caseData.data) {
+          setCurrentCase(caseData.data as CaseModel);
           setError(null);
 
           const events = await getTimelineForCase(caseId);

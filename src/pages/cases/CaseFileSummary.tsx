@@ -15,6 +15,7 @@ import { Layout } from "@/components/layout/layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Case as CaseType } from "@/types/models";
+import { getCaseById } from "@/api/CaseServices";
 
 const CaseFileSummaryPage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -32,9 +33,9 @@ const CaseFileSummaryPage = () => {
       
       setIsLoading(true);
       try {
-        const loadedCaseData = await getItem('cases', caseId);
-        if (loadedCaseData) {
-          setCaseData(loadedCaseData as CaseType);
+        const loadedCaseData = await getCaseById(caseId);
+        if (loadedCaseData.data) {
+          setCaseData(loadedCaseData.data as CaseType);
           setError(null);
         } else {
           setError("Case not found.");

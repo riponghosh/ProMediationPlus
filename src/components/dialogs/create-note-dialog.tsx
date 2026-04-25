@@ -48,8 +48,7 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
       const loadMatters = async () => {
         setIsLoadingMatters(true);
         try {
-          const loadedMatters = await getCases(params); 
-          console.log('Loaded matters:', loadedMatters);
+          const loadedMatters = await getCases(params);
           setMatters(loadedMatters.data || []);
         } catch (error) {
           console.error('Error loading matters:', error);
