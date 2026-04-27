@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Case, Meeting } from "@/types/models"; // Import Case and Meeting types
 import { getCaseById } from "@/api/CaseServices";
-import { createCaseMeeting, getCaseMeetings } from "@/api/MeetingServices";
+import { createCaseMeeting, deleteCaseMeeting, getCaseMeetings } from "@/api/MeetingServices";
 
 const MeetingsPage = () => {
   const { id: caseId } = useParams<{ id: string }>();
@@ -221,7 +221,7 @@ const MeetingsPage = () => {
   const handleDeleteMeeting = async (meetingId: string) => {
     try {
       // Delete the meeting from the database
-      await deleteItem('meetings', meetingId);
+      await deleteCaseMeeting(caseId, meetingId);
       
       // Update the meetings list
       setMeetings(prev => prev.filter(meeting => meeting.id !== meetingId));
@@ -665,17 +665,17 @@ const MeetingsPage = () => {
                 <span className="font-semibold">Date:</span> {formatDate(selectedMeetingForDetails.date)}
               </div>
               <div>
-                <span className="font-semibold">Time:</span> {selectedMeetingForDetails.time}
+                <span className="font-semibold">Time:</span> {selectedMeetingForDetails?.time}
               </div>
               <div>
-                <span className="font-semibold">Duration:</span> {selectedMeetingForDetails.duration} minutes
+                <span className="font-semibold">Duration:</span> {selectedMeetingForDetails?.duration} minutes
               </div>
               <div>
                 <span className="font-semibold">Location:</span> {selectedMeetingForDetails.location}
               </div>
               {selectedMeetingForDetails.participants && selectedMeetingForDetails.participants.length > 0 && (
                 <div>
-                  <span className="font-semibold">Participants:</span> {selectedMeetingForDetails.participants.join(', ')}
+                  <span className="font-semibold">Participants:</span> {/* {selectedMeetingForDetails.participants.join(', ')} */}
                 </div>
               )}
               {selectedMeetingForDetails.agenda && (

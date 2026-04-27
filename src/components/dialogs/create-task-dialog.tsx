@@ -97,7 +97,7 @@ export function CreateTaskDialog() {
       status: values.status,
       priority: values.priority,
       dueDate: values.dueDate.toISOString(),
-      assignedTo: values.assignedTo || null,
+      assignedTo: "moderator", // Placeholder until API supports assignedTo
     };
     
     const apiResponse = await createCaseTask(values.caseId, apiPayload);
@@ -111,7 +111,7 @@ export function CreateTaskDialog() {
       priority: values.priority as "Low" | "Medium" | "High",
       status: values.status as 'Todo' | 'In Progress' | 'Done' | 'Blocked',
       dueDate: values.dueDate,
-      assignedTo: values.assignedTo,
+      assignedTo: "modarator", // Placeholder until API supports assignedTo
       description: values.description || "",
       createdAt: new Date(),
       updatedAt: new Date(),

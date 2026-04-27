@@ -24,3 +24,15 @@ export const getCaseMeetings = async (caseId: string) => {
     };
   }
 };
+
+export const deleteCaseMeeting = async (caseId: string, meetingId: string) => {
+  try {
+    const response = await api.delete(`/api/v1/cases/${caseId}/meetings/${meetingId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to delete meeting",
+    };
+  }
+};

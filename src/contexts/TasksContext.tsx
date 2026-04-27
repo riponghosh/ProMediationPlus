@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { getCaseTasks } from "@/api/TaskServices";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { toast } from "sonner";
 
 export interface Task {
@@ -214,6 +215,21 @@ const initialTasks: Task[] = sortTasks([
 export function TasksProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks); // Already sorted
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]); // Changed from number[]
+
+  const loadTasks = async (caseId: string) => {
+    try {
+      
+      const fetchedTasks = await getCaseTasks(caseId);
+      setTasks(sortTasks(fetchedTasks)); // Sort after fetching
+    } catch (error) {
+      toast.error("Failed to load tasks");
+    }
+  };
+
+  useEffect(() => {
+    // For demonstration, we can load tasks for a default case ID
+    loadTasks("case-smith-v-johnson-001");
+  }, []);
 
   // Toggle task completion (visual only - doesn't change status)
   const toggleTaskCompletion = async (taskId: string) => {

@@ -12,3 +12,15 @@ export const createCaseTask = async (caseId: string, taskData: CaseTaskData) => 
     };
   }
 };
+
+export const getCaseTasks = async (caseId: string) => {
+  try {
+    const response = await api.get(`/api/v1/cases/${caseId}/tasks`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to fetch tasks",
+    };
+  }
+};
