@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { Contact, Case } from "@/types/models";
 import { addItem, getAllItems, putItem, deleteItem } from "@/services/localDbService";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getContacts } from "@/api/ContactServices";
+import { getCases } from "@/api/CaseServices";
 
 // Mock contacts with case file links for fallback seeding
 const initialContacts: Contact[] = [
@@ -77,21 +79,10 @@ const ContactsPage = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [loadedContacts, loadedMatters] = await Promise.all([
-          getAllItems('contacts'),
-          getAllItems('matters')
-        ]);
-
-        if (loadedContacts.length === 0) {
-          console.log("No contacts found, seeding initial contacts...");
-          await Promise.all(initialContacts.map(c => addItem('contacts', c)));
-          const seededContacts = await getAllItems('contacts');
-          setContacts(seededContacts);
-        } else {
-          setContacts(loadedContacts);
-        }
-
-        setMatters(loadedMatters);
+        const loadedContacts = await getContacts();
+        const loadedMatters = await getCases();
+        setContacts(loadedContacts.data);
+        setMatters(loadedMatters.data);
         console.log("Contacts loaded from DB:", loadedContacts);
         console.log("Matters loaded from DB:", loadedMatters);
       } catch (error) {
@@ -329,29 +320,39 @@ const ContactsPage = () => {
                                     <span>•</span>
                                     <div className="flex items-center space-x-1">
                                       <Briefcase className={`${isMobile ? "h-2.5 w-2.5" : "h-3 w-3"} flex-shrink-0`} />
-                                      {contact.caseFileNumbers.map((cfNumber, index) => {
-                                        const matter = matters.find(m => m.caseFileNumber === cfNumber);
-                                        return matter ? (
-                                          <Button
-                                            variant="link"
-                                            asChild
-                                            className={`p-0 h-auto ${isMobile ? "text-[0.65rem]" : "text-xs"} font-medium text-left`}
-                                          >
-                                            <Link
-                                              key={matter.id || cfNumber}
-                                              to={`/case-files/${matter.id}/summary`}
-                                              title={`View Case File ${cfNumber}`}
-                                              className={`text-blue-600 hover:underline ${isMobile ? "text-[0.65rem]" : "text-xs"}`}
-                                            >
-                                              {cfNumber}
-                                            </Link>
-                                          </Button>
-                                        ) : (
-                                          <span key={`${cfNumber}-${index}`} className={`${isMobile ? "text-[0.65rem]" : "text-xs"}`} title="Case file not found">
-                                            {cfNumber}
-                                          </span>
-                                        );
-                                      })}
+                                      {(() => {
+                                        try {
+                                          const cfArray = contact.caseFileNumbers ? JSON.parse(contact.caseFileNumbers) : [];                                          
+                                          return cfArray.map((cfNumber, index) => {
+                                            const matter = matters.find(m => m.caseFileNumber === cfNumber);
+                                            
+                                            return matter ? (
+                                              <Button
+                                                key={matter.id || cfNumber} 
+                                                variant="link"
+                                                asChild
+                                                className={`p-0 h-auto ${isMobile ? "text-[0.65rem]" : "text-xs"} font-medium text-left`}
+                                              >
+                                                <Link
+                                                  to={`/case-files/${matter.id}/summary`}
+                                                  title={`View Case File ${cfNumber}`}
+                                                  className={`text-blue-600 hover:underline ${isMobile ? "text-[0.65rem]" : "text-xs"}`}
+                                                >
+                                                  {cfNumber}
+                                                </Link>
+                                              </Button>
+                                            ) : (
+                                              <span key={`${cfNumber}-${index}`} className={`${isMobile ? "text-[0.65rem]" : "text-xs"}`} title="Case file not found">
+                                                {cfNumber}
+                                              </span>
+                                            );
+                                          });
+                                        } catch (error) {
+                                          console.error("Error parsing caseFileNumbers:", error);
+                                          return null;
+                                        }
+                                      })()}
+
                                     </div>
                                   </>
                                 )}

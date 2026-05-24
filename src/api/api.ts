@@ -3,7 +3,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:5000",
-  // baseURL: "https://api.mediationplus.metaforktech.com",
+  // baseURL: "https://api.mediation.metaforktech.com",
   headers: {
     "Content-Type": "application/json",
   },

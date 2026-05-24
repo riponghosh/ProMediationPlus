@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -10,6 +10,11 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FileText, Save, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { getCases } from "@/api/CaseServices";
 
 // Define a schema for contact form validation
 const formSchema = z.object({
@@ -31,7 +36,11 @@ interface CreateContactDialogProps {
 
 export function CreateContactDialog({ onCreateContact }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const isMobile = useIsMobile(); // Add the mobile check
+  
+  const [isLoadingMatters, setIsLoadingMatters] = useState(true);
+  const [matters, setMatters] = useState<any[]>([]);
   
   // Initialize react-hook-form with zod validation
   const form = useForm<ContactFormValues>({
@@ -44,6 +53,29 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
       type: "Client",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      setPopoverOpen(false);
+      const loadMatters = async () => {
+        setIsLoadingMatters(true);
+        try {
+          const loadedMatters = await getCases();
+          setMatters(loadedMatters.data || []);
+        } catch (error) {
+          console.error('Error loading matters:', error);
+          toast("Failed to load case files for selection");
+        } finally {
+          setIsLoadingMatters(false);
+        }
+      };
+      loadMatters();
+      form.reset();
+    } else {
+      // Reset when dialog closes
+      setPopoverOpen(false);
+    }
+  }, [open, form]);
 
   // Handle form submission
   function onSubmit(values: ContactFormValues) {
@@ -161,24 +193,82 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
             <FormField
               control={form.control}
               name="caseFileNumbers"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Case File Numbers</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter case file numbers, comma separated"
-                      {...field}
-                      value={field.value?.join(', ') || ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value ? value.split(',').map(s => s.trim()) : []);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedValue = field.value?.[0] || "";
+
+                return (
+                  <FormItem className="flex flex-col space-y-2">
+                    <FormLabel>Case File Number</FormLabel>
+                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between text-left font-normal",
+                              !selectedValue && "text-muted-foreground"
+                            )}
+                            disabled={isLoadingMatters}
+                          >
+                            {selectedValue
+                              ? matters.find((m) => m.caseFileNumber === selectedValue)?.caseFileNumber
+                              : "Select Case File..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command
+                          filter={(value, search) => {
+                            const matter = matters.find(
+                              (m) => m.caseFileNumber.toLowerCase() === value.toLowerCase()
+                            );
+                            if (!matter) return 0;
+                            const term = search.toLowerCase();
+                            if (matter.caseFileNumber.toLowerCase().includes(term)) return 1;
+                            if (matter.title.toLowerCase().includes(term)) return 1;
+                            return 0;
+                          }}
+                        >
+                          <CommandInput placeholder="Search case number or title..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              {isLoadingMatters ? "Loading cases..." : "No matching case file found."}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {matters.map((matter) => (
+                                <CommandItem
+                                  key={matter.id}
+                                  value={matter.caseFileNumber}
+                                  onSelect={() => {
+                                    field.onChange([matter.caseFileNumber]);
+                                    setPopoverOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedValue === matter.caseFileNumber ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div>
+                                    <div className="font-medium">{matter.caseFileNumber}</div>
+                                    <div className="text-xs text-muted-foreground">{matter.title}</div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
+
             
             <DialogFooter>
               <Button type="submit">Create Contact</Button>

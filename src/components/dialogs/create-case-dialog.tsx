@@ -112,11 +112,13 @@ async function onSubmit(values: FormValues) {
     const res = await createCase(payload);
 
     if (res?.success) {
-      toast.success("Case created successfully");
-      loadCases(); // Refresh the case list after creation
-      if (onSave) onSave(values);
-      form.reset();
       handleOpenChange(false);
+      form.reset();
+      toast.success("Case created successfully");
+      loadCases();
+      if (onSave) onSave(values);
+      
+      // handleOpenChange(false);
       return; 
     }
 

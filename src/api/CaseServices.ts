@@ -13,16 +13,9 @@ export const createCase = async (data: CreateCasePayload) => {
   }
 };
 
-export const getCases = async (params: GetCasesParams) => {
+export const getCases = async () => {
   try {
-    const response = await api.get("/api/v1/cases", {
-      params: {
-        page: params.page ,
-        limit: params.limit,
-        status: params.status || "",
-        search: params.search || "",
-      },
-    });
+    const response = await api.get("/api/v1/cases");
 
     return response.data;
   } catch (error: any) {

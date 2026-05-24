@@ -36,19 +36,14 @@ export function CreateNoteDialog({ isOpen, onClose }: CreateNoteDialogProps) {
     caseFileNumber: "",
     content: ""
   });
-  const params = {
-  page: 1,
-  limit: 100,
-  status: 'active',
-  search: ''
-};
+
 
   useEffect(() => {
     if (isOpen) {
       const loadMatters = async () => {
         setIsLoadingMatters(true);
         try {
-          const loadedMatters = await getCases(params);
+          const loadedMatters = await getCases();
           setMatters(loadedMatters.data || []);
         } catch (error) {
           console.error('Error loading matters:', error);
