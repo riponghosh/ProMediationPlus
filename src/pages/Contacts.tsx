@@ -74,25 +74,25 @@ const ContactsPage = () => {
   // Helper for icon size - matching Settings.tsx
   const iconSizeClass = isMobile ? "h-3.5 w-3.5" : "h-4 w-4";
 
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const loadedContacts = await getContacts();
+      const loadedMatters = await getCases();
+      setContacts(loadedContacts.data);
+      setMatters(loadedMatters.data);
+      console.log("Contacts loaded from DB:", loadedContacts);
+      console.log("Matters loaded from DB:", loadedMatters);
+    } catch (error) {
+      console.error('Error loading data from IndexedDB:', error);
+      toast.error("Failed to load contacts or matters from local storage.");
+      setContacts(initialContacts);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Load contacts and matters from IndexedDB on component mount
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const loadedContacts = await getContacts();
-        const loadedMatters = await getCases();
-        setContacts(loadedContacts.data);
-        setMatters(loadedMatters.data);
-        console.log("Contacts loaded from DB:", loadedContacts);
-        console.log("Matters loaded from DB:", loadedMatters);
-      } catch (error) {
-        console.error('Error loading data from IndexedDB:', error);
-        toast.error("Failed to load contacts or matters from local storage.");
-        setContacts(initialContacts);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadData();
   }, []);
 
@@ -186,18 +186,17 @@ const ContactsPage = () => {
 
   return (
     <Layout>
-      <div className={`flex flex-col h-full ${isMobile ? "space-y-4" : "space-y-6"}`}>
+      <div className={`flex flex-col ${isMobile ? "space-y-4" : "space-y-6"}`}>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
-            <h1 className={`${isMobile ? "text-xl" : "text-3xl"} font-bold tracking-tight`}>Contacts</h1>
-            <p className="text-muted-foreground text-sm">
-              Manage all your clients and professional contacts
-            </p>
+            <div>
+              <h1 className={`${isMobile ? "text-xl" : "text-3xl"} font-bold tracking-tight`}>Contacts</h1>
+              <p className="text-muted-foreground text-sm">
+                Manage all your clients and professional contacts
+              </p>
+            </div>
+            <CreateContactDialog  onCreateContact={handleCreateContact} onLoadData={loadData} />
           </div>
-          <CreateContactDialog onCreateContact={handleCreateContact} />
-        </div>
-
-        <Card className="h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+        <Card className=" flex flex-col overflow-hidden">
           <CardHeader className={`${isMobile ? "px-2 py-2" : "pb-0"}`}>
             <div className="flex justify-between items-center">
               <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -363,7 +362,7 @@ const ContactsPage = () => {
                           <div className={`${isMobile ? "p-4 text-sm" : "p-6"} text-center text-muted-foreground`}>
                             <p>No contacts found.</p>
                             <div className="mt-2">
-                              <CreateContactDialog onCreateContact={handleCreateContact} />
+                              <CreateContactDialog onLoadData={loadData} onCreateContact={handleCreateContact} />
                             </div>
                           </div>
                         )}

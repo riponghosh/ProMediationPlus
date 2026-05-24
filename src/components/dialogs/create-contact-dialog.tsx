@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { getCases } from "@/api/CaseServices";
+import { createContact } from "@/api/ContactServices";
 
 // Define a schema for contact form validation
 const formSchema = z.object({
@@ -32,15 +33,17 @@ export type ContactFormValues = z.infer<typeof formSchema>;
 // Define props for the CreateContactDialog component
 interface CreateContactDialogProps {
   onCreateContact: (contact: any) => void;
+  onLoadData: () => void;
 }
 
-export function CreateContactDialog({ onCreateContact }: CreateContactDialogProps) {
+export function CreateContactDialog({ onCreateContact, onLoadData }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const isMobile = useIsMobile(); // Add the mobile check
   
   const [isLoadingMatters, setIsLoadingMatters] = useState(true);
   const [matters, setMatters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   
   // Initialize react-hook-form with zod validation
   const form = useForm<ContactFormValues>({
@@ -78,22 +81,23 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
   }, [open, form]);
 
   // Handle form submission
-  function onSubmit(values: ContactFormValues) {
-    // Create a new contact with a generated UUID
-    const newContact = {
-      id: crypto.randomUUID(), // Generate a proper UUID string
-      ...values,
-    };
-    
-    // Pass the new contact to the parent component
-    onCreateContact(newContact);
-    
-    // Show success toast
-    toast.success("Contact created successfully");
-    
+  async function onSubmit(values: ContactFormValues) {
+    setLoading(true);
+    try {
+      await createContact(values);
+      // Show success toast
+      toast.success("Contact created successfully");
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      toast.error("Failed to create contact");
+    } finally {
+      setLoading(false);
+    }
     // Reset form and close dialog
     form.reset();
     setOpen(false);
+    // Call the onLoadData function to refresh the contact list
+    onLoadData();
   }
 
   return (
@@ -267,11 +271,16 @@ export function CreateContactDialog({ onCreateContact }: CreateContactDialogProp
                   </FormItem>
                 );
               }}
-            />
-
-            
+            />            
             <DialogFooter>
-              <Button type="submit">Create Contact</Button>
+              {loading ? (
+                <Button disabled>
+                  <FileText className="animate-spin mr-2 h-4 w-4" />
+                  Creating...
+                </Button>
+              ) : (
+                <Button type="submit">Create Contact</Button>
+              )}
             </DialogFooter>
           </form>
         </Form>
