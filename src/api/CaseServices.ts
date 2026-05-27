@@ -61,3 +61,15 @@ export const deleteCase = async (caseId: string) => {
     };
   }
 };
+
+export const updateContact = async (contactId: string, payload: any) => {
+  try {
+    const response = await api.put(`/api/v1/contacts/${contactId}`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to update contact",
+    };
+  }
+};

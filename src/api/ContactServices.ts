@@ -23,3 +23,15 @@ export const createContact = async (payload: any) => {
     };
   }
 };
+
+export const deleteContact = async (contactId: string) => {
+  try {
+    const response = await api.delete(`/api/v1/contacts/${contactId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to delete contact",
+    };
+  }
+};

@@ -23,8 +23,8 @@ import { toast } from "sonner";
 import { Contact, Case } from "@/types/models";
 import { addItem, getAllItems, putItem, deleteItem } from "@/services/localDbService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getContacts } from "@/api/ContactServices";
-import { getCases } from "@/api/CaseServices";
+import { deleteContact, getContacts } from "@/api/ContactServices";
+import { getCases, updateContact } from "@/api/CaseServices";
 
 // Mock contacts with case file links for fallback seeding
 const initialContacts: Contact[] = [
@@ -117,8 +117,9 @@ const ContactsPage = () => {
   // Handle contact deletion
   const handleDeleteContact = async (id: string | number) => {
     try {
-      await deleteItem('contacts', String(id));
-      setContacts(prev => prev.filter(contact => contact.id !== id));
+      await deleteContact(String(id));
+      // setContacts(prev => prev.filter(contact => contact.id !== id));
+      loadData();
       toast.success("Contact deleted successfully");
     } catch (error) {
       console.error("Error deleting contact:", error);
@@ -146,10 +147,8 @@ const ContactsPage = () => {
     };
 
     try {
-      await putItem('contacts', updatedContact);
-      setContacts(prev =>
-        prev.map(contact => contact.id === updatedContact.id ? updatedContact : contact)
-      );
+      await updateContact(String(updatedContactData.id), updatedContact);
+      loadData();
       toast.success("Contact updated successfully");
     } catch (error) {
       console.error("Error updating contact:", error);

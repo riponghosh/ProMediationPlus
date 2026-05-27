@@ -34,7 +34,20 @@ const formSchema = z.object({
   company: z.string().optional(),
   type: z.string().min(1, "Contact type is required"),
   // Allow CF followed by alphanumeric and hyphens
-  caseFileNumbers: z.array(z.string().regex(/^CF[\w-]+$/, "Case file number must start with 'CF' and contain numbers, letters, or hyphens")).optional(),
+  caseFileNumbers: z.union([
+    z.array(z.string().regex(/^CF[\w-]+$/, "Case file number must start with 'CF' and contain numbers, letters, or hyphens")),
+    z.undefined(),
+  ]).optional().transform(val => {
+    // Handle string values that might be stored as JSON
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return [];
+      }
+    }
+    return val;
+  }),
 });
 
 export type ContactFormValues = z.infer<typeof formSchema>;
@@ -48,10 +61,28 @@ interface EditContactDialogProps {
 
 export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateContact, onDelete }: EditContactDialogProps) {
   const [open, setOpen] = useState(false);
+  // console.log("edit", contact);
+  
+  // Helper function to parse caseFileNumbers
+  const parseCaseFileNumbers = (value: any): string[] | undefined => {
+    if (!value) return undefined;
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  };
   
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: contact,
+    defaultValues: {
+      ...contact,
+      caseFileNumbers: parseCaseFileNumbers(contact.caseFileNumbers),
+    },
   });
 
   function onSubmit(values: ContactFormValues) {
@@ -210,6 +241,7 @@ export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateC
               control={form.control}
               name="caseFileNumbers"
               render={({ field }) => {
+                // At this point, field.value should always be an array or undefined
                 const selectedValues = field.value || [];
                 const [popoverOpen, setPopoverOpen] = useState(false);
                 const [inputValue, setInputValue] = useState(''); // For CommandInput
@@ -250,7 +282,7 @@ export function EditContactDialog({ contact, availableCaseFileNumbers, onUpdateC
                             aria-expanded={popoverOpen}
                             className={cn(
                               "w-full justify-between",
-                              !field.value?.length && "text-muted-foreground"
+                              !selectedValues?.length && "text-muted-foreground"
                             )}
                           >
                             {selectedValues.length > 0
