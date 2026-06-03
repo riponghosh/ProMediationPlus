@@ -192,3 +192,12 @@ export interface CaseMeetingData {
   agenda: string;
   // notes: string;
 }
+
+export interface SessionPayload {
+  title: string;
+  date: Date; // Date object
+  startTime: string; // "HH:MM"
+  endTime: string; // "HH:MM"
+  sessionType: "Phone Call" | "Video Call" | "Meeting"; // Strict Literal Types
+  notes: string;
+}

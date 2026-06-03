@@ -37,6 +37,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { createSession } from '@/api/SessionServices';
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Session title is required" }),
@@ -115,7 +116,7 @@ export function CreateSessionDialog({ isOpen, onClose, initialDate, onAddSession
 
     try {
       // Pass only the required fields and notes
-      onAddSession({
+      await createSession({
         title: data.title,
         date: data.date, // Pass Date object
         startTime: data.startTime,

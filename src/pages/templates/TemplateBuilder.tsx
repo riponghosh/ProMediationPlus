@@ -59,6 +59,7 @@ import {
     Check,
     Info,
 } from "lucide-react";
+import { createTemplate } from "@/api/TemplateService";
 
 // --- Zod Schemas ---
 
@@ -130,8 +131,8 @@ const sectionSchema = z.discriminatedUnion("type", [
 type Section = z.infer<typeof sectionSchema>;
 
 const statementOfMeansSchema = z.object({
-    statementTitle: z.string().optional().default("Statement of Means"),
-    statementDate: z.string().optional().default(new Date().toISOString().split('T')[0]),
+    title: z.string().optional().default("Statement of Means"),
+    date: z.string().optional().default(new Date().toISOString().split('T')[0]),
     sections: z.array(sectionSchema).default([]),
 });
 
@@ -249,12 +250,12 @@ const FinancialListSectionFields: React.FC<FinancialListSectionProps> = ({
 
 // --- Main Builder Component ---
 
-export function TemplateBuilder() {
+export function TemplateBuilder({setTemplateBuilderOpen, loadTemplates}: {setTemplateBuilderOpen: (open: boolean) => void; loadTemplates: () => void}) {
     const form = useForm<StatementOfMeansData>({
         resolver: zodResolver(statementOfMeansSchema),
         defaultValues: {
-            statementTitle: "New Template",
-            statementDate: new Date().toISOString().split("T")[0],
+            title: "",
+            date: new Date().toISOString().split("T")[0],
             sections: [], // Start with no sections
         },
     });
@@ -291,7 +292,7 @@ export function TemplateBuilder() {
     };
 
     const addSection = (sectionTemplate: Omit<Section, 'id'>) => {
-        append({ ...sectionTemplate, id: uuidv4() }); // Add with a new unique ID
+        append({ ...sectionTemplate, id: uuidv4() });
         setPopoverOpen(false); // Close popover after adding
         toast.success(`Section "${sectionTemplate.title}" added.`);
     };
@@ -347,11 +348,26 @@ export function TemplateBuilder() {
         }
     };
 
-    function onSubmit(data: StatementOfMeansData) {
-        console.log("Template Submitted:", JSON.stringify(data, null, 2));
-        // TODO: Implement saving logic (e.g., API call)
-        toast.success("Template saved successfully.");
-        // You might want to clear the form or redirect after successful submission
+   async function onSubmit(data: any) {
+        const payload = {
+            title: data.title,
+            content: {
+                sections: data.sections || [] 
+            }
+        };
+
+        try {
+            const response = await createTemplate(payload);
+            console.log("Template created successfully:", response);
+            toast.success("Template saved successfully!");
+            loadTemplates();
+            setTemplateBuilderOpen(false); 
+
+            // Optionally reset the form or redirect after successful submission
+        } catch (error: any) {
+            console.error("Error creating template:", error);
+            toast.error(error.message || "Failed to save template.");
+        }
     }
 
     return (
@@ -362,8 +378,8 @@ export function TemplateBuilder() {
                     <CardHeader>
                         <CardTitle className="text-2xl">Template Builder</CardTitle>
                          <div className="flex flex-col sm:flex-row sm:items-end gap-4 pt-2">
-                             <FormField control={form.control} name="statementTitle" render={({ field }) => ( <FormItem className="flex-grow"> <FormLabel>Template Title</FormLabel> <FormControl><Input placeholder="e.g., New Agreement Template" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                             <FormField control={form.control} name="statementDate" render={({ field }) => ( <FormItem> <FormLabel>Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                             <FormField control={form.control} name="title" render={({ field }) => ( <FormItem className="flex-grow"> <FormLabel>Template Title</FormLabel> <FormControl><Input placeholder="e.g., New Agreement Template" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                             <FormField control={form.control} name="date" render={({ field }) => ( <FormItem> <FormLabel>Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                          </div>
                     </CardHeader>
                 </Card>

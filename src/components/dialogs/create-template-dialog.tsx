@@ -29,6 +29,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { getCases } from '@/api/CaseServices';
+import { createTemplate } from '@/api/TemplateService';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: "Template title must be at least 3 characters." }),
@@ -63,8 +65,8 @@ export function CreateTemplateDialog({ isOpen, onClose }: CreateTemplateDialogPr
       const loadMatters = async () => {
         setIsLoadingMatters(true);
         try {
-          const loadedMatters = await getAllItems('matters');
-          setMatters(loadedMatters);
+          const loadedMatters = await getCases();
+          setMatters(loadedMatters.data ||[]);
         } catch (error) {
           console.error('Error loading matters:', error);
           toast({ title: "Error", description: "Failed to load case files.", variant: "destructive" });
@@ -90,7 +92,7 @@ export function CreateTemplateDialog({ isOpen, onClose }: CreateTemplateDialogPr
     };
 
     try {
-      await addItem('templates', newTemplate as Template);
+      await createTemplate(newTemplate as Template);
       toast({
         title: "Template Link Created",
         description: `Template "${newTemplate.title}" linked to case ${newTemplate.caseFileNumber}.`,

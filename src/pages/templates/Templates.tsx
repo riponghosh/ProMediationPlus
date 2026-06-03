@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FileOutput, Search, Plus, Clock, Filter, Download, FileText, Files, BookText, FolderClosed, Clipboard, ClipboardList, FileSignature } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { TemplateBuilder } from "@/pages/templates/TemplateBuilder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getTemplates } from "@/api/TemplateService";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data for document templates
 const allTemplates = [
@@ -41,6 +43,8 @@ const TemplatesPage = () => {
   const isMobile = useIsMobile();
   const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
   const navigate = useNavigate();
+  const [templates, setTemplates] = useState<{ [key: string]: any }>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   // Helper for icon size - matching Settings.tsx
   const iconSizeClass = isMobile ? "h-3.5 w-3.5" : "h-4 w-4";
@@ -61,17 +65,37 @@ const TemplatesPage = () => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
+  const loadTemplates = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getTemplates();      
+      setTemplates(res.data );
+    } catch (error: any) {
+      console.error("Templates load korte somossa hoyeche:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load templates",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+  // console.log("Loaded templates:", templates);
 
   // Filter templates based on search term and category
-  const filteredTemplates = allTemplates.filter(template => {
-    const matchesSearch = searchTerm === "" ||
-      template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // const filteredTemplates = allTemplates.filter(template => {
+  //   const matchesSearch = searchTerm === "" ||
+  //     template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     template.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = activeTab === "all" || template.category === activeTab;
+  //   const matchesCategory = activeTab === "all" || template.category === activeTab;
 
-    return matchesSearch && matchesCategory;
-  });
+  //   return matchesSearch && matchesCategory;
+  // });
 
   // Get tab title based on active tab
   const getTabTitle = () => {
@@ -225,7 +249,61 @@ const TemplatesPage = () => {
                   {(tabValue === "all" || tabValue === "agreement") ? (
                     <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-0 sm:p-4">
                       {/* Mediation Agreement Card */}
-                      <Card className="overflow-hidden hover:border-primary/50 transition-colors border-amber-200 bg-amber-50/30" onClick={() => navigate('/mediation-template')}>
+                      {templates.length > 0 ? (
+                        templates
+                          .filter(template => tabValue === "all" || template.category === tabValue) // Additional filter by tab
+                          .map((template) => (
+                            <Card key={template.id} className="overflow-hidden hover:border-primary/50 transition-colors" onClick={() => {
+                              // Simply navigate to a generic template view instead of opening specific modals
+                              navigate(`/templates/${template.id}`);
+                            }}>
+                              <CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-muted/50`}>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`${isMobile ? "h-8 w-8" : "h-10 w-10"} rounded-full bg-primary/10 flex items-center justify-center text-primary`}>
+                                      {/* Icon logic */}
+                                      {template.category === "agreement" ? <FileText className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
+                                       template.category === "intake" ? <ClipboardList className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
+                                       template.category === "confidentiality" ? <BookText className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
+                                       template.category === "process" ? <Clipboard className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} /> :
+                                       <FolderClosed className={`${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />}
+                                    </div>
+                                    <CardTitle className={`${isMobile ? "text-sm" : "text-base"}`}>{template.title}</CardTitle>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
+                                {/* Description div with fixed height removed */}
+                                <div className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground line-clamp-2`}>
+                                  {template.description}
+                                </div>
+                                {/* Bottom section of the card */}
+                                <div className="flex items-center justify-between mt-4">
+                                  <div className="flex items-center text-xs text-muted-foreground">
+                                    <Clock className="mr-1 h-3 w-3" />
+                                    <span>Used {formatDate(template.lastUsed)}</span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    {/* Add other actions like Edit/View if needed */}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                      ) : (
+                        // No results display
+                        <div className="col-span-full text-center py-10 text-muted-foreground">
+                          <FileOutput className="mx-auto h-10 w-10 mb-2" />
+                          <h3 className="font-medium">No templates found</h3>
+                          <p className="text-sm mt-1">
+                            {searchTerm ? "Try adjusting your search term." : `No templates found in the "${getTabTitle()}" category.`}
+                          </p>
+                        </div>
+                      )}
+                      {/* <Card className="overflow-hidden hover:border-primary/50 transition-colors border-amber-200 bg-amber-50/30" onClick={() => navigate('/mediation-template')}>
                         <CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-amber-50`}>
                           <div className="flex items-start justify-between">
                             <CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
@@ -239,10 +317,10 @@ const TemplatesPage = () => {
                             Standard agreement template for mediation process, confidentiality terms, and mediator role.
                           </p>
                         </CardContent>
-                      </Card>
+                      </Card> */}
 
                       {/* Parenting Agreement Card */}
-                      <Card className="overflow-hidden hover:border-primary/50 transition-colors border-green-200 bg-green-50/30" onClick={() => navigate('/parenting-template')}>
+                      {/* <Card className="overflow-hidden hover:border-primary/50 transition-colors border-green-200 bg-green-50/30" onClick={() => navigate('/parenting-template')}>
                         <CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-green-50`}>
                           <div className="flex items-start justify-between">
                             <CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
@@ -256,10 +334,10 @@ const TemplatesPage = () => {
                             Comprehensive template for creating parenting plans and custody arrangements for separating parents.
                           </p>
                         </CardContent>
-                      </Card>
+                      </Card> */}
 
                       {/* Separation Agreement Card */}
-                      <Card className="overflow-hidden hover:border-primary/50 transition-colors border-purple-200 bg-purple-50/30" onClick={() => navigate('/separation-template')}>
+                      {/* <Card className="overflow-hidden hover:border-primary/50 transition-colors border-purple-200 bg-purple-50/30" onClick={() => navigate('/separation-template')}>
                         <CardHeader className={`${isMobile ? "p-3" : "p-4"} bg-purple-50`}>
                           <div className="flex items-start justify-between">
                             <CardTitle className={`${isMobile ? "text-sm" : "text-base"} flex items-center`}>
@@ -273,13 +351,13 @@ const TemplatesPage = () => {
                             Legal agreement template outlining terms for separated couples including property division, support, and other obligations.
                           </p>
                         </CardContent>
-                      </Card>
+                      </Card> */}
                     </CardContent>
                   ) : (
                     // Show original filtered templates for other tabs
                     <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-0 sm:p-4">
-                      {filteredTemplates.length > 0 ? (
-                        filteredTemplates
+                      {templates.length > 0 ? (
+                        templates
                           .filter(template => tabValue === "all" || template.category === tabValue) // Additional filter by tab
                           .map((template) => (
                             <Card key={template.id} className="overflow-hidden hover:border-primary/50 transition-colors" onClick={() => {
@@ -347,7 +425,7 @@ const TemplatesPage = () => {
           <DialogHeader>
             <DialogTitle>Create New Template</DialogTitle>
           </DialogHeader>
-          <TemplateBuilder />
+          <TemplateBuilder loadTemplates={loadTemplates} setTemplateBuilderOpen={setTemplateBuilderOpen} />
         </DialogContent>
       </Dialog>
     </Layout>
