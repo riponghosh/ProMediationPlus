@@ -62,6 +62,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import PasswordReset from "./pages/auth/PasswordReset";
 import SetNewPassword from "./pages/auth/SetNewPassword";
+import TemplateRenderer from "./pages/templates/TemplateRenderer";
 
 const queryClient = new QueryClient();
 
@@ -119,6 +120,7 @@ const App = () => (
           <Route path="/guides/business-set-up" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><GuidesBusinessSetUp /></ProtectedRoute>} /> {/* Add route for GuidesBusinessSetUp */}
           <Route path="/guides/grow-your-business" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><GuidesGrowYourBusiness /></ProtectedRoute>} /> {/* Add route for GuidesGrowYourBusiness */}
           <Route path="/guides/mediate-success" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><GuidesMediateSuccess /></ProtectedRoute>} /> {/* Add route for GuidesMediateSuccess */}
+          <Route path="/templates/:id" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><TemplateRenderer /></ProtectedRoute>} />
           <Route path="/mediation-template" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><MediationAgreementBuilder /></ProtectedRoute>} /> {/* Add route for MediationAgreementBuilder */}
           <Route path="/parenting-template" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><ParentingAgreementBuilder /></ProtectedRoute>} /> {/* Add route for ParentingAgreementBuilder */}
           <Route path="/separation-template" element={<ProtectedRoute allowedRoles={["Administrator", "Client", "Mediator"]}><SeparationAgreementBuilder /></ProtectedRoute>} /> {/* Add route for SeparationAgreementBuilder */}

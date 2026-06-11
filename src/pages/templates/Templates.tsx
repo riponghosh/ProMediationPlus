@@ -2,15 +2,24 @@ import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { FileOutput, Search, Plus, Clock, Filter, Download, FileText, Files, BookText, FolderClosed, Clipboard, ClipboardList, FileSignature } from "lucide-react";
+import { FileOutput, Search, Plus, Clock, Filter, Download, FileText, Files, BookText, FolderClosed, Clipboard, ClipboardList, FileSignature, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { TemplateBuilder } from "@/pages/templates/TemplateBuilder";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getTemplates } from "@/api/TemplateService";
+import { getTemplates, deleteTemplate } from "@/api/TemplateService";
 import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Mock data for document templates
 const allTemplates = [
@@ -45,6 +54,9 @@ const TemplatesPage = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<{ [key: string]: any }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Helper for icon size - matching Settings.tsx
   const iconSizeClass = isMobile ? "h-3.5 w-3.5" : "h-4 w-4";
@@ -84,6 +96,37 @@ const TemplatesPage = () => {
   useEffect(() => {
     loadTemplates();
   }, []);
+
+  const handleDeleteClick = (template: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTemplateToDelete(template);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!templateToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTemplate(templateToDelete.id);
+      toast({
+        title: "Success",
+        description: `Template "${templateToDelete.title}" deleted successfully.`,
+      });
+      setDeleteConfirmOpen(false);
+      setTemplateToDelete(null);
+      loadTemplates();
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete template",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   // console.log("Loaded templates:", templates);
 
   // Filter templates based on search term and category
@@ -270,6 +313,15 @@ const TemplatesPage = () => {
                                     </div>
                                     <CardTitle className={`${isMobile ? "text-sm" : "text-base"}`}>{template.title}</CardTitle>
                                   </div>
+                                  {/* delete button */}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                    onClick={(e) => handleDeleteClick(template, e)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500 hover:text-red-700" />
+                                  </Button>
                                 </div>
                               </CardHeader>
                               <CardContent className={`${isMobile ? "p-3" : "p-4"}`}>
@@ -428,6 +480,28 @@ const TemplatesPage = () => {
           <TemplateBuilder loadTemplates={loadTemplates} setTemplateBuilderOpen={setTemplateBuilderOpen} />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "<span className="font-semibold">{templateToDelete?.title}</span>"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-3">
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

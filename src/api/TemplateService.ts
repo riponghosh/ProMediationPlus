@@ -24,3 +24,29 @@ export const getTemplates = async () => {
     };
   }
 };
+
+export const getTemplateById = async (id: string) => {
+  try {
+    const response = await api.get(`/api/v1/templates/${id}`);
+    return response.data;
+  }
+  catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to fetch template",
+    };
+  }
+};
+
+export const deleteTemplate = async (id: string) => {
+  try {
+    const response = await api.delete(`/api/v1/templates/${id}`);
+    return response.data;
+  }
+  catch (error: any) {
+    throw error.response?.data || {
+      error: true,
+      message: "Failed to delete template",
+    };
+  }
+};
